@@ -26,6 +26,8 @@ světle modré, Spojené království (člen do 2020) světlejší a ostatní st
 | `kompozit.m` | kompozitní indexy na úrovni států |
 | `src/composite_weights.m` | skládání metrik: lineárně / geometricky, váhy ručně / entropie / PCA |
 | `src/geometric_median.m` | Weberův bod na kouli (Weiszfeld + Vardi–Zhang) |
+| `src/regional_weights.m` | rozpočet národních součtů do regionů NUTS (díry v datech, verze NUTS) |
+| `src/choose_nuts_versions.m` | společná verze NUTS pro všechny metriky v daném státě a roce |
 | `src/EuMap.m` | třída pro mapy: projekce, státy EU / UK / ostatní (hranice GISCO), `line`/`scatter`/`text` v lat/lon |
 | `src/load_nuts_geometry.m` | polygony GISCO → těžiště a plocha regionů (`polyshape`) |
 | `src/spherical_centroid.m` | vážené těžiště na kouli (přes 3D vektory) |
