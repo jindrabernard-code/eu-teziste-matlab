@@ -16,10 +16,10 @@ load(fullfile(out, 'vahy_staty.mat'), 'W', 'M', 'countries', 'years', 'R');
 S = structfun(@(w) shares(w, M), W, 'UniformOutput', false);
 
 %% Předvolby vah (součet nemusí být 1, normalizuje se)
-P.politicky  = struct('rada_sila', 0.4, 'ep', 0.3, 'staty', 0.3);
+P.politicky  = struct('rada_hlasy', 0.4, 'ep', 0.3, 'staty', 0.3);
 P.ekonomicky = struct('hdp_eur', 0.5, 'hdp_pps', 0.5);
 P.vyvazeny   = struct('populace', 1/3, ...
-    'rada_sila', 0.4/3, 'ep', 0.3/3, 'staty', 0.3/3, ...   % 1/3 politika
+    'rada_hlasy', 0.4/3, 'ep', 0.3/3, 'staty', 0.3/3, ...  % 1/3 politika
     'hdp_eur', 0.5/3, 'hdp_pps', 0.5/3);                   % 1/3 ekonomika
 
 % Varianty: {název, váhy, metoda}
@@ -31,12 +31,15 @@ V = {
     'entropie',           'entropy',    'linear'
     'pca',                'pca',        'linear'
 };
-SP = rmfield(S, 'rada_hlasy');     % od 2014 = populace, duplikovalo by váhu
+% objektivní váhy (entropie, PCA) bez hlasů v Radě: od 2014 = populace,
+% takže by populace dostala dvojí váhu
+SP = rmfield(S, 'rada_hlasy');
 
 K = table(years, 'VariableNames', {'year'});
 fprintf('Váhy metrik v jednotlivých variantách:\n');
 for i = 1:size(V, 1)
-    [Wc, a] = composite_weights(SP, V{i, 2}, V{i, 3});
+    if ischar(V{i, 2}), Si = SP; else, Si = S; end
+    [Wc, a] = composite_weights(Si, V{i, 2}, V{i, 3});
     [K.(V{i, 1} + "_lat"), K.(V{i, 1} + "_lon")] = ...
         centroid_series(Wc, M, countries.lat, countries.lon);
     fprintf('  %-14s %s\n', V{i, 1}, format_alpha(a));
@@ -45,7 +48,7 @@ end
 % Geometrický medián (Weberův bod) pro populaci a vyvážený kompozit
 [K.populace_median_lat, K.populace_median_lon] = ...
     centroid_series(W.populace, M, countries.lat, countries.lon, 'median');
-Wv = composite_weights(SP, P.vyvazeny, 'linear');
+Wv = composite_weights(S, P.vyvazeny, 'linear');
 [K.vyvazeny_median_lat, K.vyvazeny_median_lon] = ...
     centroid_series(Wv, M, countries.lat, countries.lon, 'median');
 

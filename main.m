@@ -15,15 +15,22 @@ seats = readtable(fullfile(root, 'data', 'ep_seats.csv'), 'TextType', 'string');
 codes = countries.code;
 nC = numel(codes);  nY = numel(years);
 
-%% Eurostat: obyvatelstvo k 1. 1. a HDP (nominální EUR, PPS)
+%% Data: obyvatelstvo k 1. 1. a HDP (Eurostat), vojenské výdaje (SIPRI)
 geoQ = strjoin("geo=" + codes, "&");
 pop = fetch_eurostat('demo_pjan', geoQ + "&sex=T&age=TOTAL", fullfile(raw, 'pop.csv'));
 gdp = fetch_eurostat('nama_10_gdp', geoQ + "&na_item=B1GQ&unit=CP_MEUR", fullfile(raw, 'gdp_eur.csv'));
 pps = fetch_eurostat('nama_10_gdp', geoQ + "&na_item=B1GQ&unit=CP_MPPS_EU27_2020", fullfile(raw, 'gdp_pps.csv'));
 
+% vojenské výdaje: SIPRI přes Světovou banku, běžné USD. Měna nevadí, těžiště
+% používá jen podíly států v rámci roku.
+mil = fetch_worldbank('MS.MIL.XPND.CD', countries.iso3, fullfile(raw, 'mil_usd.csv'));
+[~, ix] = ismember(mil.iso3, countries.iso3);
+mil.geo = codes(ix);
+
 POP = to_matrix(pop, codes, years);   % [roky x státy]
 GDP = to_matrix(gdp, codes, years);
 PPS = to_matrix(pps, codes, years);
+MIL = to_matrix(mil, codes, years);
 
 %% Metriky: každá je matice vah [roky x státy]
 M = is_member(countries, years);
@@ -35,16 +42,15 @@ W.populace = POP;
 W.ep       = ep_matrix(seats, codes, years);
 W.hdp_eur  = GDP;
 W.hdp_pps  = PPS;
+W.vojenske = MIL;                                        % vojenské výdaje (nominálně)
 W.rada_hlasy = zeros(nY, nC);
-W.rada_sila  = zeros(nY, nC);                            % Banzhafův index
 
 [~, vRow] = ismember(codes, votes.code);
 for y = 1:nY
     m = M(y, :);
     if years(y) <= 2003, v = votes.w_eu15(vRow); else, v = votes.w_nice(vRow); end
-    [rule, w] = council_rule(years(y), v(m), POP(y, m));
+    [~, w] = council_rule(years(y), v(m), POP(y, m));
     W.rada_hlasy(y, m) = w;
-    W.rada_sila(y, m)  = banzhaf_mc(rule, nnz(m), 1e5, years(y));
 end
 
 %% Těžiště

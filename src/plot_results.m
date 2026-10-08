@@ -4,7 +4,7 @@ cols = [lines(7); 0 0 0];                 % lines() má jen 7 barev, 8. metrika 
 cols = cols(1:numel(names), :);
 labels = struct('staty', 'Státy (1:1)', 'plocha', 'Plocha', 'populace', 'Populace', ...
     'ep', 'Mandáty EP', 'hdp_eur', 'HDP (EUR)', 'hdp_pps', 'HDP (PPS)', ...
-    'rada_hlasy', 'Hlasy v Radě', 'rada_sila', 'Banzhafova síla v Radě');
+    'rada_hlasy', 'Hlasy v Radě', 'vojenske', 'Vojenské výdaje');
 
 % 1) mapa
 f = figure('Visible', 'off', 'Position', [100 100 1100 800]);

@@ -38,7 +38,8 @@ světle modré, Spojené království (člen do 2020) světlejší a ostatní st
 | `src/load_nuts_geometry.m` | polygony GISCO → těžiště a plocha regionů (`polyshape`) |
 | `src/spherical_centroid.m` | vážené těžiště na kouli (přes 3D vektory) |
 | `src/council_rule.m` | pravidla kvalifikované většiny: Amsterdam (EU-15), Nice, Lisabon |
-| `src/banzhaf_mc.m` | Banzhafův index hlasovací síly (Monte Carlo) |
+| `src/banzhaf_mc.m` | Banzhafův index hlasovací síly (Monte Carlo), výklad níže, mezi metrikami těžiště není |
+| `src/fetch_worldbank.m` | stahování ukazatelů Světové banky (vojenské výdaje SIPRI), cache |
 | `src/fetch_eurostat.m` | stahování a parsování JSON-stat z Eurostatu, cache |
 | `src/is_member.m` | matice členství rok × stát (k 31. 12.) |
 | `data/countries.csv` | státy, přibližné středy území, plocha, data vstupu/odchodu |
@@ -88,10 +89,12 @@ odhaduje Monte Carlem (náhodné koalice, chyba ~0,1 %).
   byla **0 %**. Ostatní státy měly sudé počty hlasů a kvóta byla 12, takže jeho hlas
   nikdy nic nerozhodl. Přesný výpočet ze všech 64 koalic to potvrzuje.
 
-V projektu jsou proto dvě metriky. **Hlasy v Radě** jsou formální váha (od roku 2014
-totožná s populací). **Banzhafova síla v Radě** je skutečný vliv a její těžiště leží
-o ~160 km východněji (2025), protože malé státy (často na východě) mají víc síly, než by
-odpovídalo jejich velikosti.
+Mezi metrikami těžiště jsou jen **hlasy v Radě**, tedy formální váha (od roku 2014
+totožná s populací). Banzhafova síla v metrikách byla, ale nahradily ji **vojenské
+výdaje**. `src/banzhaf_mc.m` v projektu zůstává a výpočet výše jde zopakovat. Těžiště
+Banzhafovy síly leželo v roce 2025 asi o 160 km východněji než těžiště formálních
+hlasů, protože malé státy (často na východě) mají víc síly, než by odpovídalo jejich
+velikosti.
 
 ## Návrhy metrik
 
@@ -103,12 +106,20 @@ Metriky ✅ jsou implementované, ostatní jsou návrhy na další práci.
 |---|---|---|
 | ✅ **Státy 1:1** | „jeden stát, jeden hlas“: Komise (1 komisař/stát), jednomyslnost, Evropská rada | definice |
 | ✅ **Hlasy v Radě EU** | 2000–2003 vážené hlasy EU-15 (87), 2004–2013 Nice (321/345/352), od 2014 dvojí většina, kde hlasem je populace | smlouvy |
-| ✅ **Banzhafova síla v Radě** | jak často je stát rozhodující pro vznik většiny. Váha hlasů a skutečná moc se liší: podle Nice měly Polsko a Španělsko s 27 hlasy téměř stejnou sílu jako Německo s 29 | výpočet |
+| Banzhafova síla v Radě | jak často je stát rozhodující pro vznik většiny (výklad výše). Implementováno v `banzhaf_mc.m`, mezi metrikami nahrazeno vojenskými výdaji | výpočet |
 | ✅ **Mandáty v EP** | degresivní proporcionalita, malé státy jsou nadreprezentované | rozhodnutí o složení EP |
 | Shapley–Shubikův index | alternativa k Banzhafovi (záleží na pořadí, ve kterém se koalice skládá) | výpočet |
 | Síla v Radě guvernérů ECB | jen eurozóna, rotující hlasovací práva od 2015 | ECB |
 | Kapitálový klíč ECB | 50 % populace + 50 % HDP, mění se po 5 letech | ECB |
 | Váha frakcí v EP | těžiště EPP vs. S&D vs. Renew atd. (kde „sedí“ která frakce) | EP, ParlGov |
+
+### Bezpečnost
+
+| Metrika | Poznámka |
+|---|---|
+| ✅ **Vojenské výdaje** (nominálně, běžné USD) | SIPRI přes Světovou banku (`MS.MIL.XPND.CD`), 2000–2024. Váhou je částka, ne % HDP: procento je intenzita a jako váha by malý stát s vysokým podílem (Řecko) vážil víc než velký (Německo). Eurostat (COFOG GF02) nejde použít, chybí v něm UK |
+| Vojenské výdaje v % HDP | `MS.MIL.XPND.GD.ZS`, vhodné pro srovnání států, ne jako váha těžiště |
+| Počet vojáků | SIPRI / Světová banka `MS.MIL.TOTL.P1` |
 
 ### Demografie a území
 
@@ -146,10 +157,10 @@ Posun 2000 → 2025 (`results/souhrn_posunu.csv`):
 | Metrika | 2000 | 2025 | Posun | Směr |
 |---|---|---|---|---|
 | Státy 1:1 | 50,37 N 6,66 E (Lucembursko/Porýní) | 49,18 N 14,15 E (**jižní Čechy**) | **553 km** | V |
-| Banzhafova síla v Radě | 49,10 N 5,97 E | 48,53 N 11,53 E (Bavorsko) | 412 km | V |
 | Mandáty v EP | 48,77 N 5,68 E | 48,40 N 11,04 E | 396 km | V |
 | Plocha | 50,67 N 6,90 E | 50,25 N 11,55 E (Durynsko) | 333 km | V |
 | Populace | 48,48 N 5,57 E (Lotrinsko) | 47,95 N 9,58 E (u Bodamského jezera) | 303 km | V |
+| Vojenské výdaje (do 2024) | 49,47 N 5,09 E | 49,20 N 9,93 E | 352 km | V |
 | Hlasy v Radě | 49,00 N 5,92 E | 47,95 N 9,58 E | 294 km | VJV |
 | HDP v PPS | 48,87 N 5,85 E | 48,41 N 8,96 E | 234 km | V |
 | HDP v EUR | 49,54 N 5,66 E | 48,78 N 8,44 E (Bádensko-Württembersko) | 220 km | VJV |
@@ -160,7 +171,7 @@ Co je z toho vidět:
    o 164 km při rozšíření 2004, o 79 km v roce 2007 a o 141 km při brexitu 2020.
    V ostatních letech se meziročně hýbe jen o 1–4 km.
 2. **Čím „rovnostářštější“ metrika, tím dál na východ.** Pořadí od západu na východ je
-   HDP → populace → EP → Banzhaf → státy 1:1. Malé východní státy mají v institucích
+   HDP → populace → vojenské výdaje → EP → plocha → státy 1:1. Malé východní státy mají v institucích
    víc váhy, než odpovídá jejich obyvatelstvu, a ještě víc v poměru k jejich ekonomice.
 3. **Mezi rozšířeními se populační těžiště plíží zpátky na západ** (2007–2019 z 8,61° na 8,35° v. d.,
    2020–2025 z 9,75° na 9,58° v. d.). Příčinou je vylidňování východu a jihovýchodu
@@ -168,11 +179,15 @@ Co je z toho vidět:
 4. **Ekonomické těžiště se mezi rozšířeními naopak posouvá na východ** (HDP v EUR
    2004–2019 z 6,18° na 6,81° v. d.). To je ekonomická konvergence nových členů.
 5. **Lisabonská reforma 2014 posunula těžiště hlasů v Radě o ~150 km na západ**
-   (viz skok červené křivky v `casove_rady.png`). Systém z Nice nadhodnocoval
+   (viz skok křivky „Hlasy v Radě“ v `casove_rady.png`). Systém z Nice nadhodnocoval
    středně velké státy, hlavně Polsko a Španělsko, a dvojí většina tuto výhodu
    přesunula k Německu.
 6. Brexit posunul **všechny** metriky na jihovýchod, protože UK leželo na severozápadním
    okraji.
+7. **Vojenské výdaje mají největší skok při brexitu (219 km)**, protože UK mělo
+   největší vojenský rozpočet v EU. V roce 2000 leží jejich těžiště nejzápadněji ze všech
+   metrik (UK + Francie). Po invazi na Ukrajinu se posouvá na **severovýchod**
+   (2022→2024 o 108 km na 49,20 N 9,93 E) se zbrojením Polska a Pobaltí.
 
 ![mapa](results/mapa_teziste.png)
 ![časové řady](results/casove_rady.png)
@@ -193,12 +208,15 @@ na **podíl státu na EU** v daném roce (součet = 1). Teprve tyto podíly se s
 
 **Tři způsoby, jak zvolit váhy αₖ:**
 
-- **Ručně (předvolby):** politický (Banzhaf 0,4 + EP 0,3 + státy 0,3), ekonomický
+- **Ručně (předvolby):** politický (hlasy v Radě 0,4 + EP 0,3 + státy 0,3), ekonomický
   (HDP EUR + PPS), vyvážený (⅓ populace, ⅓ politika, ⅓ ekonomika).
 - **Entropické váhy:** metrika rozložená mezi státy nerovnoměrněji nese víc
-  informace. Státy 1:1 tak dostanou 0 a HDP v EUR nejvíc (0,25).
+  informace. Státy 1:1 tak dostanou 0 a nejvíc vojenské výdaje (0,23), které jsou
+  ze všech metrik nejkoncentrovanější (FR + DE + IT).
 - **PCA (postup OECD Handbook):** čtverce ladění 1. hlavní komponenty. Vychází
   skoro rovnoměrně (~0,18), protože metriky spolu silně korelují.
+
+Entropie a PCA zahrnují i vojenské výdaje, a proto končí rokem 2024.
 
 **Jiný způsob, jak spojit více proměnných:** místo těžiště (průměru) se dá hledat
 **geometrický medián**, tedy bod s nejmenším součtem vážených vzdáleností („kam
@@ -208,17 +226,17 @@ leží přesně v Lucembursku. Ověřil jsem to hrubou sítí i `fminsearch`.
 
 | Varianta | 2000 | 2025 | Posun |
 |---|---|---|---|
-| Politický | 49,38 N 6,08 E | 48,69 N 12,16 E | 449 km |
-| Vyvážený (lineární) | 49,02 N 5,80 E | 48,42 N 10,14 E | 325 km |
-| PCA | 49,13 N 5,87 E | 48,61 N 10,09 E | 314 km |
-| Vyvážený (geometrický) | 48,93 N 5,74 E | 48,43 N 9,86 E | 307 km |
-| Entropie | 49,23 N 5,89 E | 48,70 N 9,72 E | 286 km |
+| Politický | 49,34 N 6,06 E | 48,47 N 11,36 E | 399 km |
+| Vyvážený (lineární) | 49,01 N 5,79 E | 48,34 N 9,88 E | 309 km |
+| PCA (do 2024) | 49,19 N 5,71 E | 48,72 N 9,79 E | 303 km |
+| Vyvážený (geometrický) | 48,92 N 5,74 E | 48,34 N 9,67 E | 296 km |
+| Entropie (do 2024) | 49,29 N 5,70 E | 48,82 N 9,68 E | 295 km |
 | Ekonomický | 49,20 N 5,75 E | 48,59 N 8,70 E | 226 km |
 | Medián populace | 49,20 N 5,90 E | 49,29 N 10,02 E | 299 km |
-| Medián vyvážený | 49,78 N 6,10 E | 49,81 N 10,31 E | 302 km |
+| Medián vyvážený | 49,78 N 6,10 E | 49,78 N 10,18 E | 293 km |
 
 Medián leží asi o 1° severněji než těžiště, protože ho jih (Itálie, Španělsko,
-Řecko, Kypr) netáhne tolik. Geometrický kompozit je o 0,3° západněji než lineární:
+Řecko, Kypr) netáhne tolik. Geometrický kompozit je o 0,2° západněji než lineární:
 penalizuje státy s vysokou populací a nízkým HDP, tedy hlavně východ.
 
 ![kompozit](results/kompozit_mapa.png)
@@ -316,6 +334,8 @@ společnou paletou přes `rgb2ind` + `imwrite`. Funguje to i v `matlab -batch`.
 - Obyvatelstvo, HDP, zaměstnanost: © European Union, Eurostat (`demo_pjan`, `nama_10_gdp`,
   `nama_10_pe`, `demo_r_pjanaggr3`, `nama_10r_3gdp`, `nama_10r_3empers`), CC BY 4.0.
 - Hranice států a regionů NUTS: © EuroGeographics for the administrative boundaries (GISCO).
+- Vojenské výdaje: SIPRI Military Expenditure Database přes World Bank Open Data
+  (`MS.MIL.XPND.CD`), CC BY 4.0.
 - Vážené hlasy v Radě a mandáty v EP: smlouvy EU a rozhodnutí o složení Evropského
   parlamentu (ručně přepsáno do `data/`).
 
@@ -331,7 +351,8 @@ stáhne vše potřebné.
 - Přechodná období se ignorují: hlasy v Radě květen–říjen 2004, volitelný systém
   z Nice v letech 2014–2017, 18 dodatečných poslanců EP od prosince 2011.
 - Pravidlo z Nice počítá s populační pojistkou 62 % vždy (ve skutečnosti se uplatňovala jen na žádost).
-- Banzhaf je odhad Monte Carlem s 1e5 koalicemi, chyba je v řádu 0,1 %.
+- Banzhaf (výklad, není mezi metrikami) je odhad Monte Carlem, chyba je v řádu 0,1 %.
+- Vojenské výdaje jsou definice SIPRI (blízká NATO), v běžných USD. Data za 2025 zatím nejsou.
 - Zámořská území (Kanárské ostrovy, Azory, francouzské DOM) se ve středu státu nepočítají.
   Do populace a HDP z Eurostatu ale zahrnutá jsou.
 
