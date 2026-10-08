@@ -1,10 +1,11 @@
 function plot_results(R, names, years, out)
 %PLOT_RESULTS Mapa trajektorií těžišť + časové řady zeměpisné délky.
-cols = [lines(7); 0 0 0];                 % lines() má jen 7 barev, 8. metrika černě
+cols = [lines(7); 0 0 0; 0.55 0.55 0.55; 0.6 0.3 0.1];   % lines() má jen 7 barev
 cols = cols(1:numel(names), :);
 labels = struct('staty', 'Státy (1:1)', 'plocha', 'Plocha', 'populace', 'Populace', ...
     'ep', 'Mandáty EP', 'hdp_eur', 'HDP (EUR)', 'hdp_pps', 'HDP (PPS)', ...
-    'rada_hlasy', 'Hlasy v Radě', 'vojenske', 'Vojenské výdaje');
+    'rada_hlasy', 'Hlasy v Radě', 'vojenske', 'Vojenské výdaje', ...
+    'platci', 'Čistí plátci (rozpočet EU)', 'prijemci', 'Čistí příjemci (rozpočet EU)');
 
 % 1) mapa
 f = figure('Visible', 'off', 'Position', [100 100 1100 800]);

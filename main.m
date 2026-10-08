@@ -43,6 +43,16 @@ W.ep       = ep_matrix(seats, codes, years);
 W.hdp_eur  = GDP;
 W.hdp_pps  = PPS;
 W.vojenske = MIL;                                        % vojenské výdaje (nominálně)
+
+% čistí plátci / příjemci rozpočtu EU (operační rozpočtové saldo, mil. EUR).
+% Saldo má znaménko a jeho součet je ~0, takže z něj nejde udělat jedno
+% těžiště. Počítají se dvě: plátci vážení velikostí příspěvku, příjemci
+% velikostí toho, co dostávají.
+bud = eu_budget_balance(raw);
+OBB = to_matrix(table(bud.code, bud.year, bud.obb, 'VariableNames', {'geo', 'year', 'value'}), codes, years);
+W.platci   = max(-OBB, 0);
+W.prijemci = max(OBB, 0);
+W.platci(isnan(OBB)) = NaN;  W.prijemci(isnan(OBB)) = NaN;
 W.rada_hlasy = zeros(nY, nC);
 
 [~, vRow] = ismember(codes, votes.code);
@@ -55,6 +65,9 @@ end
 
 %% Těžiště
 names = string(fieldnames(W))';
+% v grafech HDP v EUR nahrazují čistí plátci / příjemci; HDP zůstává v CSV
+% a v uložených vahách (kompozit.m, main_nuts.m)
+plotNames = names(names ~= "hdp_eur");
 R = table(years, 'VariableNames', {'year'});
 for k = names
     [R.(k + "_lat"), R.(k + "_lon")] = centroid_series(W.(k), M, countries.lat, countries.lon);
@@ -83,8 +96,9 @@ d = haversine_km(R.populace_lat(1:end-1), R.populace_lon(1:end-1), ...
 for y = 1:numel(d), fprintf('  %d -> %d: %7.1f\n', years(y), years(y+1), d(y)); end
 
 %% Grafy + uložení vah (results/vahy_staty.mat) pro navazující analýzy
-plot_results(R, names, years, out);
-save(fullfile(out, 'vahy_staty.mat'), 'W', 'M', 'countries', 'years', 'R');
+plot_results(R, plotNames, years, out);
+plot_budget_axis(R, OBB, M, years, out);
+save(fullfile(out, 'vahy_staty.mat'), 'W', 'M', 'countries', 'years', 'R', 'OBB');
 
 %% ---------------------------------------------------------------------
 function X = to_matrix(T, codes, years)

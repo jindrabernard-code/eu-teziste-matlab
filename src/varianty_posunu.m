@@ -4,10 +4,16 @@ V = struct('file', {}, 'title', {}, 'T', {}, 'series', {});
 V(1).file = '1_metriky';
 V(1).title = 'Varianta 1: těžiště EU podle jednotlivých metrik (státy)';
 V(1).T = readtable(fullfile(out, 'teziste_po_letech.csv'));
-V(1).series = {
-    'Státy 1:1', 'staty';  'Plocha', 'plocha';  'Populace', 'populace'
-    'Mandáty EP', 'ep';  'HDP (EUR)', 'hdp_eur';  'HDP (PPS)', 'hdp_pps'
-    'Hlasy v Radě', 'rada_hlasy';  'Vojenské výdaje', 'vojenske'};
+V(1).series = {    % popisek, prefix, vlastní výřez
+    'Státy 1:1',        'staty',      false
+    'Plocha',           'plocha',     false
+    'Populace',         'populace',   false
+    'Mandáty EP',       'ep',         false
+    'HDP (PPS)',        'hdp_pps',    false
+    'Hlasy v Radě',     'rada_hlasy', false
+    'Vojenské výdaje',  'vojenske',   false
+    'Čistí plátci',     'platci',     false
+    'Čistí příjemci',   'prijemci',   true};   % ~1 250 km, ze Španělska do Maďarska
 
 V(2).file = '2_kompozit';
 V(2).title = 'Varianta 2: kompozitní indexy (státy)';

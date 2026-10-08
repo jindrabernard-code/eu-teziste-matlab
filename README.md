@@ -39,6 +39,8 @@ světle modré, Spojené království (člen do 2020) světlejší a ostatní st
 | `src/spherical_centroid.m` | vážené těžiště na kouli (přes 3D vektory) |
 | `src/council_rule.m` | pravidla kvalifikované většiny: Amsterdam (EU-15), Nice, Lisabon |
 | `src/banzhaf_mc.m` | Banzhafův index hlasovací síly (Monte Carlo), výklad níže, mezi metrikami těžiště není |
+| `src/eu_budget_balance.m` | operační rozpočtové saldo států (čistí plátci / příjemci) z dat Komise |
+| `src/plot_budget_axis.m` | graf osy přerozdělení: těžiště plátců vs. příjemců |
 | `src/fetch_worldbank.m` | stahování ukazatelů Světové banky (vojenské výdaje SIPRI), cache |
 | `src/fetch_eurostat.m` | stahování a parsování JSON-stat z Eurostatu, cache |
 | `src/is_member.m` | matice členství rok × stát (k 31. 12.) |
@@ -136,7 +138,7 @@ Metriky ✅ jsou implementované, ostatní jsou návrhy na další práci.
 |---|---|
 | ✅ **HDP v EUR (běžné ceny)** | ekonomická váha na trhu. Výrazně západněji než populace |
 | ✅ **HDP v PPS** | HDP očištěné o cenové hladiny, východ v něm váží víc |
-| Rozpočet EU: příspěvky / čistá pozice | těžiště plátců vs. příjemců. Dva body, mezi kterými se dá měřit vzdálenost |
+| ✅ **Čistí plátci / čistí příjemci rozpočtu EU** | operační rozpočtové saldo (Komise, 2000–2025). Saldo má znaménko, proto dvě těžiště: plátci vážení příspěvkem, příjemci tím, co dostávají. V grafech nahrazuje HDP v EUR |
 | Vnitrounijní obchod (export do EU) | těžiště jednotného trhu |
 | Přímé zahraniční investice uvnitř EU | kam proudí kapitál |
 | Emise CO₂ / spotřeba energie | těžiště klimatického břemene |
@@ -152,7 +154,8 @@ Metriky ✅ jsou implementované, ostatní jsou návrhy na další práci.
 
 ## Výsledky (první běh, data Eurostatu ke 2026-10)
 
-Posun 2000 → 2025 (`results/souhrn_posunu.csv`):
+Posun 2000 → 2025 (`results/souhrn_posunu.csv`; HDP v EUR je v CSV dál, v grafech ho
+nahradili čistí plátci a příjemci):
 
 | Metrika | 2000 | 2025 | Posun | Směr |
 |---|---|---|---|---|
@@ -163,7 +166,8 @@ Posun 2000 → 2025 (`results/souhrn_posunu.csv`):
 | Vojenské výdaje (do 2024) | 49,47 N 5,09 E | 49,20 N 9,93 E | 352 km | V |
 | Hlasy v Radě | 49,00 N 5,92 E | 47,95 N 9,58 E | 294 km | VJV |
 | HDP v PPS | 48,87 N 5,85 E | 48,41 N 8,96 E | 234 km | V |
-| HDP v EUR | 49,54 N 5,66 E | 48,78 N 8,44 E (Bádensko-Württembersko) | 220 km | VJV |
+| Čistí příjemci rozpočtu EU | 42,86 N 4,77 E (Lví záliv) | 47,76 N 19,25 E (**Maďarsko**) | **1 254 km** | VSV |
+| Čistí plátci rozpočtu EU | 52,34 N 7,38 E (SZ Německo) | 49,96 N 8,34 E (Mohuč) | 273 km | J |
 
 Co je z toho vidět:
 
@@ -191,6 +195,45 @@ Co je z toho vidět:
 
 ![mapa](results/mapa_teziste.png)
 ![časové řady](results/casove_rady.png)
+
+## Čistí plátci a příjemci rozpočtu EU
+
+Každý stát do rozpočtu EU přispívá a zároveň z něj dostává peníze. Rozdíl je jeho
+**čistá pozice**. Počítá se metodou Komise (*operating budgetary balance*,
+`src/eu_budget_balance.m`, data „EU spending and revenue 2000–2025“):
+
+- **výdaje** = peníze EU přidělené státu **bez administrativy**. Jinak by Belgie
+  a Lucembursko vycházely jako příjemci jen kvůli sídlům institucí.
+- **příspěvek** = národní příspěvek (zdroje z DPH, HND, plastů, korekce a vyrovnání),
+  **bez cel**. Cla vybírá stát za celou EU (Rotterdamský efekt).
+- **saldo** = výdaje − příspěvek přeškálovaný tak, aby součet sald za EU byl nula.
+- **NextGenerationEU** (od 2021) se nezapočítává, protože se financuje půjčkami,
+  ne příspěvky. Funkce má volbu `includeNGEU`.
+
+Saldo má znaménko a jeho součet je nula, takže z něj nejde udělat jedno těžiště.
+Projekt proto počítá **dvě**: těžiště **čistých plátců** (váha = kolik platí)
+a **čistých příjemců** (váha = kolik dostávají). Vzdálenost mezi nimi je délka
+„osy přerozdělení“.
+
+- **Příjemci se posunuli o 1 254 km**, nejvíc ze všech metrik: z oblasti
+  Lvího zálivu (2000: Španělsko, Řecko, Portugalsko, Irsko) přes severní Itálii
+  (2006–2008) a Rakousko (2009–2013) do **Maďarska** (od 2014: Polsko, Maďarsko,
+  Rumunsko, Česko).
+- **Plátci zůstávají v západním Německu** (Německo, Francie, Nizozemsko, dříve UK).
+  Kolísají, ale celkově se posunuli jen o 273 km k jihu, k Mohuči: odešlo UK a mezi
+  plátce přibyla Itálie.
+- **Osa přerozdělení** měřila 1 000–1 200 km v letech 2000–2003, po rozšíření se
+  zkrátila na ~600 km (2010). Příjemci se přiblížili ke středu EU. Pak se znovu
+  prodlužuje na 700–900 km, jak se příjemci posouvají na východ.
+- **Objem přerozdělení** (součet čistých pozic příjemců) vzrostl z 15 mld. EUR
+  (2000) na 48 mld. (2020). V roce 2024 spadl na 24 mld., protože začátek nového
+  programového období znamená málo plateb z kohezních fondů.
+
+Toky jsou meziročně rozkolísané (načasování plateb), proto mají v mapách posunů
+popsaných jen 6 největších skoků. Panel příjemců má **vlastní výřez**, ve
+společném by se ostatní trajektorie zmenšily na pár pixelů.
+
+![osa přerozdělení](results/rozpocet_osa.png)
 
 ## Kompozitní index (`kompozit.m`)
 
@@ -334,6 +377,8 @@ společnou paletou přes `rgb2ind` + `imwrite`. Funguje to i v `matlab -batch`.
 - Obyvatelstvo, HDP, zaměstnanost: © European Union, Eurostat (`demo_pjan`, `nama_10_gdp`,
   `nama_10_pe`, `demo_r_pjanaggr3`, `nama_10r_3gdp`, `nama_10r_3empers`), CC BY 4.0.
 - Hranice států a regionů NUTS: © EuroGeographics for the administrative boundaries (GISCO).
+- Rozpočet EU (výdaje a příspěvky podle států): Evropská komise, *EU spending and revenue –
+  Data 2000–2025* (commission.europa.eu, EU budget), © European Union.
 - Vojenské výdaje: SIPRI Military Expenditure Database přes World Bank Open Data
   (`MS.MIL.XPND.CD`), CC BY 4.0.
 - Vážené hlasy v Radě a mandáty v EP: smlouvy EU a rozhodnutí o složení Evropského
@@ -352,6 +397,8 @@ stáhne vše potřebné.
   z Nice v letech 2014–2017, 18 dodatečných poslanců EP od prosince 2011.
 - Pravidlo z Nice počítá s populační pojistkou 62 % vždy (ve skutečnosti se uplatňovala jen na žádost).
 - Banzhaf (výklad, není mezi metrikami) je odhad Monte Carlem, chyba je v řádu 0,1 %.
+- Čistá pozice je operační rozpočtové saldo Komise. Nezahrnuje NGEU, cla ani administrativu
+  a závisí na načasování plateb, ne na tom, kdy byly prostředky přiděleny.
 - Vojenské výdaje jsou definice SIPRI (blízká NATO), v běžných USD. Data za 2025 zatím nejsou.
 - Zámořská území (Kanárské ostrovy, Azory, francouzské DOM) se ve středu státu nepočítají.
   Do populace a HDP z Eurostatu ale zahrnutá jsou.

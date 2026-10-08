@@ -13,7 +13,9 @@ addpath(fullfile(root, 'src'));
 out = fullfile(root, 'results');
 load(fullfile(out, 'vahy_staty.mat'), 'W', 'M', 'countries', 'years', 'R');
 
-S = structfun(@(w) shares(w, M), W, 'UniformOutput', false);
+% plátci/příjemci rozpočtu do kompozitů nepatří: nejsou to "velikosti"
+% státu, ale směr přerozdělení (mají vlastní graf rozpocet_osa.png)
+S = structfun(@(w) shares(w, M), rmfield(W, {'platci', 'prijemci'}), 'UniformOutput', false);
 
 %% Předvolby vah (součet nemusí být 1, normalizuje se)
 P.politicky  = struct('rada_hlasy', 0.4, 'ep', 0.3, 'staty', 0.3);
@@ -66,7 +68,7 @@ end
 %% Mapa: jednotlivé metriky šedě, kompozity barevně
 f = figure('Visible', 'off', 'Position', [100 100 1100 800]);
 mp = EuMap(f, [34 71], [-11 35], true);
-for k = string(fieldnames(W))'
+for k = string(fieldnames(S))'
     mp.line(R.(k + "_lat"), R.(k + "_lon"), '-', 'Color', [0.6 0.6 0.6], ...
         'LineWidth', 0.8, 'HandleVisibility', 'off');
 end
