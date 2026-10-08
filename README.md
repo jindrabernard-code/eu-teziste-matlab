@@ -5,14 +5,14 @@ obyvatelstvem nebo ekonomikou? A jak s ním pohnula rozšíření 2004/2007/2013
 
 Projekt počítá těžiště ve třech variantách: podle jednotlivých metrik (každý stát jako
 jeden bod), jako kompozitní index více metrik a na úrovni regionů NUTS-2/NUTS-3. Výsledky
-jsou mapy posunu rok po roku. Všechno běží v základním MATLABu nad živými daty
+jsou mapy a animace posunu rok po roku. Všechno běží v základním MATLABu nad živými daty
 Eurostatu.
 
 ## Spuštění
 
 ```matlab
 cd eu-teziste-matlab   % kořen repozitáře
-run_all          % = main; kompozit; main_nuts; mapy_posunu
+run_all          % = main; kompozit; main_nuts; mapy_posunu; animace_posunu
 ```
 
 Při prvním běhu se stáhnou data z Eurostat API do `data/raw/` (obyvatelstvo `demo_pjan`,
@@ -26,6 +26,7 @@ světle modré, Spojené království (člen do 2020) světlejší a ostatní st
 | `run_all.m` | spustí všechno níže v tomto pořadí |
 | `main.m` | úroveň států: data → váhy → těžiště → souhrn → grafy |
 | `mapy_posunu.m` | mapy posunů rok po roku pro všechny tři varianty (`results/posuny_*.png`) |
+| `animace_posunu.m` | totéž jako animované GIFy, jeden snímek na rok (`results/animace_*.gif`) |
 | `src/tracks_figure.m`, `src/tracks_set_year.m` | sdílené sestavení mapy posunů a její vykreslení „do roku Y“ (statika i animace) |
 | `kompozit.m` | kompozitní indexy na úrovni států |
 | `main_nuts.m` | regiony NUTS-2 / NUTS-3: demografie + ekonomika, kompozity, medián |
@@ -288,6 +289,21 @@ podle roku a sousední roky spojuje úsečka, tedy posun během daného roku. Po
 jsou první a poslední rok a skoky nad 25 km. Body blíž než 20 km se popíší rozsahem
 („2020–25“). Všechny panely jedné mapy mají stejný výřez, takže jsou délky posunů
 srovnatelné.
+
+**Animace** (`animace_posunu.m`) mají stejné rozvržení, jeden snímek na rok 2000–2025:
+
+- trajektorie se kreslí postupně a aktuální rok je zakroužkovaný,
+- v nadpisu panelu je posun od roku 2000 a posun za daný rok,
+- na přehledové mapě jsou modře státy, které byly v daném roce členy EU
+  (EU-15 → 25 → 27 → 28 → 27), a UK je od roku 2020 světlé jako bývalý člen,
+- snímek běží 0,7 s, roky rozšíření, brexitu a změny pravidel v Radě (2004, 2007,
+  2013, 2014, 2020) dvojnásobně dlouho a poslední snímek 4 s.
+
+Technicky: obrázek se sestaví jednou a pro každý rok se jen přepnou data a viditelnost
+objektů (`tracks_set_year`). Snímky se zachytí přes `print -RGBImage` a uloží se se
+společnou paletou přes `rgb2ind` + `imwrite`. Funguje to i v `matlab -batch`.
+
+![animace varianty 1](results/animace_1_metriky.gif)
 
 ![varianta 1](results/posuny_1_metriky.png)
 ![varianta 2](results/posuny_2_kompozit.png)
