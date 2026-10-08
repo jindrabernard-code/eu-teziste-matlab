@@ -4,14 +4,15 @@ Kam se posouvá „střed“ Evropské unie, když ho vážíme hlasy v Radě, m
 obyvatelstvem nebo ekonomikou? A jak s ním pohnula rozšíření 2004/2007/2013 a brexit?
 
 Projekt počítá těžiště ve třech variantách: podle jednotlivých metrik (každý stát jako
-jeden bod), jako kompozitní index více metrik a na úrovni regionů NUTS-2/NUTS-3. Všechno běží v základním MATLABu nad živými daty
+jeden bod), jako kompozitní index více metrik a na úrovni regionů NUTS-2/NUTS-3. Výsledky
+jsou mapy posunu rok po roku. Všechno běží v základním MATLABu nad živými daty
 Eurostatu.
 
 ## Spuštění
 
 ```matlab
 cd eu-teziste-matlab   % kořen repozitáře
-run_all          % = main; kompozit; main_nuts
+run_all          % = main; kompozit; main_nuts; mapy_posunu
 ```
 
 Při prvním běhu se stáhnou data z Eurostat API do `data/raw/` (obyvatelstvo `demo_pjan`,
@@ -24,6 +25,8 @@ světle modré, Spojené království (člen do 2020) světlejší a ostatní st
 |---|---|
 | `run_all.m` | spustí všechno níže v tomto pořadí |
 | `main.m` | úroveň států: data → váhy → těžiště → souhrn → grafy |
+| `mapy_posunu.m` | mapy posunů rok po roku pro všechny tři varianty (`results/posuny_*.png`) |
+| `src/tracks_figure.m`, `src/tracks_set_year.m` | sdílené sestavení mapy posunů a její vykreslení „do roku Y“ (statika i animace) |
 | `kompozit.m` | kompozitní indexy na úrovni států |
 | `main_nuts.m` | regiony NUTS-2 / NUTS-3: demografie + ekonomika, kompozity, medián |
 | `src/composite_weights.m` | skládání metrik: lineárně / geometricky, váhy ručně / entropie / PCA |
@@ -275,3 +278,17 @@ zaměstnanost 0,3), vyvážený, geometrický, entropie, PCA.
 
 ![regiony](results/nuts3_mapa.png)
 ![rozlišení](results/nuts_srovnani.png)
+
+## Mapy posunů rok po roku (`mapy_posunu.m`)
+
+Pro každou variantu je jedna mapa: vlevo nahoře přehled celé EU (všechny řady,
+čárkovaně výřez, členské státy modře), pak přiblížený panel pro každou řadu
+na neutrálním šedém podkladu (`grayland`). Každý rok je bod obarvený
+podle roku a sousední roky spojuje úsečka, tedy posun během daného roku. Popsané
+jsou první a poslední rok a skoky nad 25 km. Body blíž než 20 km se popíší rozsahem
+(„2020–25“). Všechny panely jedné mapy mají stejný výřez, takže jsou délky posunů
+srovnatelné.
+
+![varianta 1](results/posuny_1_metriky.png)
+![varianta 2](results/posuny_2_kompozit.png)
+![varianta 3](results/posuny_3_nuts3.png)
