@@ -1,10 +1,11 @@
 function G = load_nuts_geometry(version, level, cacheDir)
-%LOAD_NUTS_GEOMETRY Středy a plochy regionů NUTS z GISCO (měřítko 1:20M).
-%   G = load_nuts_geometry(2021, 3, 'data/raw/nuts') vrací tabulku
-%   code, cntr, version, lat, lon, area_km2. Výsledek se ukládá do CSV,
-%   GeoJSON se stahuje jen poprvé.
-%   Střed = těžiště polygonu (polyshape) v lokální ekvidistantní projekci
-%   kolem regionu; na velikosti NUTS-3 je chyba projekce zanedbatelná.
+%LOAD_NUTS_GEOMETRY Centroids and areas of NUTS regions from GISCO (scale 1:20M).
+%   G = load_nuts_geometry(2021, 3, 'data/raw/nuts') returns a table
+%   code, cntr, version, lat, lon, area_km2. The result is cached as CSV,
+%   the GeoJSON is downloaded only once.
+%   Centre = centroid of the polygon (polyshape) in a local equirectangular
+%   projection around the region; at NUTS-3 size the projection error is
+%   negligible.
 cacheFile = fullfile(cacheDir, sprintf('nuts%d_%d.csv', level, version));
 if isfile(cacheFile)
     G = readtable(cacheFile, 'TextType', 'string');

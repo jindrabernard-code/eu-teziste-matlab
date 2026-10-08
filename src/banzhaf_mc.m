@@ -1,8 +1,10 @@
 function beta = banzhaf_mc(rule, n, nSamples, seed)
-%BANZHAF_MC Normalizovaný Banzhafův index síly odhadnutý Monte Carlem.
-%   Náhodné koalice (každý stát s p = 1/2); stát i je "swing", pokud
-%   koalice s ním vyhrává a bez něj prohrává. Pro n = 28 je přesný výpočet
-%   2^28 koalic zbytečný, chyba MC při 2e5 vzorcích je ~1e-3.
+%BANZHAF_MC Normalised Banzhaf power index estimated by Monte Carlo.
+%   Random coalitions (each state in with p = 1/2); state i is a "swing"
+%   if the coalition wins with it and loses without it. For n = 28 the
+%   exact enumeration of 2^28 coalitions is unnecessary, the MC error with
+%   2e5 samples is ~1e-3. Not used as a centroid metric any more; kept for
+%   the explanation in the README.
 if nargin < 4, seed = 1; end
 rng(seed);
 C = rand(nSamples, n) < 0.5;

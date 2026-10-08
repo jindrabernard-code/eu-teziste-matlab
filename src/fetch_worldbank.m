@@ -1,9 +1,9 @@
 function T = fetch_worldbank(indicator, iso3, cacheFile)
-%FETCH_WORLDBANK Stáhne ukazatel ze Světové banky (API v2) jako long tabulku.
-%   T = fetch_worldbank('MS.MIL.XPND.CD', iso3, 'data/raw/mil.csv') vrací
-%   sloupce iso3, year, value. Je-li cacheFile na disku, načte se z něj.
-%   Vojenské výdaje (MS.MIL.*) jsou data SIPRI, která Světová banka přebírá.
-%   Eurostat (COFOG GF02) je pro tento účel nepoužitelný, chybí v něm UK.
+%FETCH_WORLDBANK Download a World Bank indicator (API v2) as a long table.
+%   T = fetch_worldbank('MS.MIL.XPND.CD', iso3, 'data/raw/mil.csv') returns
+%   columns iso3, year, value. If cacheFile exists it is read instead.
+%   Military expenditure (MS.MIL.*) is SIPRI data republished by the World
+%   Bank. Eurostat (COFOG GF02) cannot be used here: it has no UK.
 if nargin >= 3 && isfile(cacheFile)
     T = readtable(cacheFile, 'TextType', 'string');
     return
@@ -11,7 +11,7 @@ end
 url = sprintf('https://api.worldbank.org/v2/country/%s/indicator/%s?format=json&date=2000:2030&per_page=5000', ...
     strjoin(iso3, ';'), indicator);
 js = webread(url, weboptions('Timeout', 60, 'ContentType', 'json'));
-rows = js{2};                                  % js{1} jsou metadata (stránkování)
+rows = js{2};                                  % js{1} is metadata (paging)
 if iscell(rows), rows = [rows{:}]; end
 iso = string({rows.countryiso3code})';
 year = str2double(string({rows.date}))';

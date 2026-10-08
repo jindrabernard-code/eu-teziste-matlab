@@ -1,6 +1,8 @@
 function [r, x, bestDist] = nuts_split(D, dataYears, hasRow, rowOf, G, c, year, onlyVer)
-%NUTS_SPLIT Regiony státu c a jejich hodnoty z nejbližšího roku, kdy je pro některou
-% verzi NUTS pokrytí kompletní. Při shodě vzdálenosti vyhrává novější verze.
+%NUTS_SPLIT Regions of country c and their values from the nearest year with full coverage.
+%   Searches the NUTS versions (only onlyVer unless it is NaN) for the year
+%   closest to `year` in which every region of the country has data. On a
+%   tie in distance the newer version wins.
 r = [];  x = [];  bestDist = inf;
 vs = sort(unique(G.version), 'descend')';
 if ~isnan(onlyVer), vs = onlyVer; end

@@ -1,15 +1,15 @@
 function rings = geojson_rings(c)
-%GEOJSON_RINGS Kruhy (Multi)Polygonu z jsondecode.
-% jsondecode vrací souřadnice (Multi)Polygonu buď jako numerické pole
-% [... x N x 2] (když mají kruhy stejnou délku), nebo jako vnořené cell.
-% Výsledek: cell sloupcových matic [lon lat], jedna na kruh.
+%GEOJSON_RINGS Rings of a (Multi)Polygon decoded by jsondecode.
+% jsondecode returns (Multi)Polygon coordinates either as a numeric array
+% [... x N x 2] (when all rings have the same length) or as nested cells.
+% Result: cell of column matrices [lon lat], one per ring.
 if iscell(c)
     rings = {};
     for j = 1:numel(c), rings = [rings, geojson_rings(c{j})]; end %#ok<AGROW>
     return
 end
 sz = size(c);
-if numel(sz) == 2 && sz(2) == 2                   % jediný kruh N x 2
+if numel(sz) == 2 && sz(2) == 2                   % a single N x 2 ring
     rings = {c};
     return
 end

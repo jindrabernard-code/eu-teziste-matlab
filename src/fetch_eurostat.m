@@ -1,8 +1,8 @@
 function T = fetch_eurostat(dataset, query, cacheFile)
-%FETCH_EUROSTAT Stáhne dataset z Eurostat API (JSON-stat 2.0) a vrátí long tabulku.
+%FETCH_EUROSTAT Download a dataset from the Eurostat API (JSON-stat 2.0) as a long table.
 %   T = fetch_eurostat('demo_pjan', 'sex=T&age=TOTAL', 'data/raw/pop.csv')
-%   Výsledek má sloupce geo, year, value. Je-li cacheFile již na disku,
-%   načte se z něj (projekt pak běží i offline).
+%   returns columns geo, year, value. If cacheFile exists it is read
+%   instead, so the project also runs offline after the first run.
 
 if nargin >= 3 && isfile(cacheFile)
     T = readtable(cacheFile, 'TextType', 'string');
@@ -21,11 +21,12 @@ end
 end
 
 function T = parse_jsonstat(txt)
-% JSON-stat ukládá hodnoty do jednoho plochého objektu "value" indexovaného
-% row-major přes všechny dimenze (pořadí v id, velikosti v size).
-% Předpokládáme, že všechny dimenze kromě geo a time mají velikost 1.
-% Objekt "value" (u regionálních dat desítky tisíc položek) se parsuje
-% regulárním výrazem: jsondecode by z něj udělal struct s 50 000 poli.
+% JSON-stat stores the values in one flat "value" object indexed row-major
+% over all dimensions (order in id, sizes in size). All dimensions except
+% geo and time are assumed to have size 1.
+% The "value" object (tens of thousands of entries for regional data) is
+% parsed with a regular expression: jsondecode would turn it into a struct
+% with 50 000 fields.
 tok  = regexp(txt, '"value":\{([^}]*)\}', 'tokens', 'once');
 kv   = regexp(tok{1}, '"(\d+)":(-?[\d.eE+-]+|null)', 'tokens');
 kv   = vertcat(kv{:});
@@ -39,16 +40,16 @@ geoIx = js.dimension.geo.category.index;
 timIx = js.dimension.time.category.index;
 geos  = string(fieldnames(geoIx));
 times = string(fieldnames(timIx));
-% fieldnames u struct mění "2000" na "x2000" -> vrátit čísla
+% fieldnames turns "2000" into "x2000" -> back to numbers
 years = str2double(erase(times, "x"));
 
 assert(prod(sz(~ismember(dims, ["geo" "time"]))) == 1, ...
-    'fetch_eurostat: dotaz musí fixovat všechny dimenze kromě geo a time');
+    'fetch_eurostat: the query must fix every dimension except geo and time');
 
 gPos = cellfun(@(g) geoIx.(g), cellstr(geos));
 tPos = cellfun(@(t) timIx.(t), cellstr(times));
 nT   = sz(dims == "time");
-% time je v Eurostat odpovědích vždy poslední dimenze
+% time is always the last dimension in Eurostat responses
 gi = floor(flat / nT);
 ti = mod(flat, nT);
 

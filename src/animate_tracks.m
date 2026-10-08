@@ -1,7 +1,7 @@
 function animate_tracks(T, series, ttl, file, delay)
-%ANIMATE_TRACKS Animovaný GIF posunu těžiště rok po roku.
-%   Stejný obrázek jako plot_yearly_tracks, jeden snímek na rok. Rok
-%   rozšíření nebo brexitu se drží déle, poslední snímek ještě déle.
+%ANIMATE_TRACKS Animated GIF of the centroid shift, year by year.
+%   Same figure as plot_yearly_tracks, one frame per year. Enlargement and
+%   Brexit years are held longer, the last frame longer still.
 if nargin < 5, delay = 0.7; end
 H = tracks_figure(T, series, ttl, 1500);
 events = [2004 2007 2013 2014 2020];
@@ -12,7 +12,7 @@ for y = H.years'
     frames{end+1} = print(H.fig, '-RGBImage', '-r96'); %#ok<AGROW>
 end
 close(H.fig);
-% jedna paleta pro všechny snímky (z posledního, který obsahuje všechny barvy)
+% one palette for all frames (from the last one, which contains every colour)
 [~, map] = rgb2ind(frames{end}, 255, 'nodither');
 for k = 1:numel(frames)
     X = rgb2ind(frames{k}, map, 'nodither');

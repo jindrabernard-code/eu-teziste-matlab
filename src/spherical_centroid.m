@@ -1,9 +1,9 @@
 function [lat, lon] = spherical_centroid(latDeg, lonDeg, w)
-%SPHERICAL_CENTROID Vážené těžiště bodů na kouli.
-%   Body se převedou na jednotkové 3D vektory, zprůměrují se s vahami w
-%   a výsledek se promítne zpět na povrch. Na rozdíl od prostého průměru
-%   zeměpisných souřadnic nezkresluje vzdálenosti (1° délky na 35° N je
-%   o 30 % delší než na 64° N).
+%SPHERICAL_CENTROID Weighted centroid of points on a sphere.
+%   Points are converted to 3D unit vectors, averaged with weights w and the
+%   result is projected back onto the surface. Unlike a plain average of
+%   latitudes and longitudes this does not distort distances (one degree of
+%   longitude is ~30 % longer at 35° N than at 64° N).
 w = w(:) / sum(w(:));
 la = deg2rad(latDeg(:));  lo = deg2rad(lonDeg(:));
 xyz = [cos(la).*cos(lo), cos(la).*sin(lo), sin(la)];

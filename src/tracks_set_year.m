@@ -1,8 +1,8 @@
 function tracks_set_year(H, y, animated)
-%TRACKS_SET_YEAR Zobrazí v obrázku z tracks_figure trajektorie do roku y.
-%   animated = true: nadpis s rokem a velikostí EU, modře státy, které
-%   byly členy v daném roce (UK od 2020 jako bývalý člen), zvýrazněný
-%   aktuální bod. false: statická mapa za celé období.
+%TRACKS_SET_YEAR Show the tracks up to year y in a figure from tracks_figure.
+%   animated = true: title with the year and EU size, countries that were
+%   members in that year in blue (the UK as a former member from 2020),
+%   current point highlighted. false: static map of the whole period.
 if nargin < 3, animated = false; end
 K = EuMap.K;
 yi = find(H.years == y);
@@ -20,7 +20,7 @@ for i = 1:H.n
     delete(findobj(gx, 'Tag', 'yrlabel'));
     if isempty(ok)
         set(H.cur(i), 'LatitudeData', NaN, 'LongitudeData', NaN);
-        title(gx, sprintf('%s  (bez dat)', H.labels{i}), 'FontSize', 10);
+        title(gx, sprintf('%s  (no data)', H.labels{i}), 'FontSize', 10);
         continue
     end
     year_labels(gx, H.px{i}, la, lo, H.years, ok, H.labelKm(i));
@@ -31,7 +31,7 @@ for i = 1:H.n
         if numel(ok) > 1 && H.years(ok(end)) == y
             step = haversine_km(la(ok(end-1)), lo(ok(end-1)), la(ok(end)), lo(ok(end)));
         end
-        title(gx, sprintf('%s%s  (od %d: %.0f km, za rok: %.0f km)', H.labels{i}, own_note(H, i), ...
+        title(gx, sprintf('%s%s  (since %d: %.0f km, this year: %.0f km)', H.labels{i}, own_note(H, i), ...
             H.years(ok(1)), d, step), 'FontSize', 10);
     else
         set(H.cur(i), 'LatitudeData', NaN, 'LongitudeData', NaN);
@@ -43,22 +43,21 @@ if animated
     mem = H.codes(H.member(yi, :));
     former = H.codes(any(H.member(1:yi, :), 1) & ~H.member(yi, :));
     H.map.showMembers(mem, former);
-    H.map.LegEU.DisplayName = sprintf('Členské státy EU v roce %d (%d)', y, numel(mem));
-    H.map.LegFormer.DisplayName = 'Bývalý člen (UK od 2020)';
-    title(H.tl, sprintf('%s — rok %d (EU-%d)', H.ttl, y, numel(mem)), ...
+    H.map.LegEU.DisplayName = sprintf('EU members in %d (%d)', y, numel(mem));
+    H.map.LegFormer.DisplayName = 'Former member (UK from 2020)';
+    title(H.tl, sprintf('%s — %d (EU-%d)', H.ttl, y, numel(mem)), ...
         'FontWeight', 'bold', 'FontSize', 16);
 end
 end
 
 function year_labels(gx, px, la, lo, years, ok, thr)
-% první rok, skoky > thr km (25 km při společném výřezu, nejvýš 6 největších)
-% a poslední rok;
-% body blíž než 0.8*thr km
-% k předchozímu popisku se k němu připojí jako rozsah ("2020–25").
-% Umístění řeší place_labels, aby popisky nepřekrývaly trajektorii.
+% Label the first year, jumps > thr km (25 km in the shared zoom, at most
+% the 6 largest) and the last year. Points closer than 0.8*thr km to the
+% previous label are merged into it as a range ("2020–25").
+% place_labels positions them so they do not cover the track.
 d = [inf; haversine_km(la(ok(1:end-1)), lo(ok(1:end-1)), la(ok(2:end)), lo(ok(2:end)))];
 big = ok(d > thr);
-if numel(big) > 6                       % rozkolísaná řada (rozpočet): jen 6 největších skoků
+if numel(big) > 6                       % noisy series: only the 6 largest jumps
     [~, ord] = sort(d(d > thr), 'descend');
     big = sort(big(ord(1:6)));
 end
@@ -76,5 +75,5 @@ end
 
 function s = own_note(H, i)
 s = '';
-if H.own(i), s = ' [vlastní výřez]'; end
+if H.own(i), s = ' [own zoom]'; end
 end

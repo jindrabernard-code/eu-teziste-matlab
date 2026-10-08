@@ -1,6 +1,6 @@
-%% Geografické těžiště EU 2000-2025 podle různých metrik
-% Spuštění: v MATLABu otevřít složku projektu a dát `main`.
-% Data z Eurostatu se při prvním běhu stáhnou do data/raw/ (pak offline).
+%% Geographic centroid of the EU 2000-2025 by metric (states as points)
+% Run: open the project folder in MATLAB and type `main` (or `run_all`).
+% Data are downloaded into data/raw/ on the first run (offline afterwards).
 
 clear; clc;
 root = fileparts(mfilename('fullpath'));
@@ -15,103 +15,93 @@ seats = readtable(fullfile(root, 'data', 'ep_seats.csv'), 'TextType', 'string');
 codes = countries.code;
 nC = numel(codes);  nY = numel(years);
 
-%% Data: obyvatelstvo k 1. 1. a HDP (Eurostat), vojenské výdaje (SIPRI)
+%% Data: population on 1 January, GDP and government debt (Eurostat),
+%  military spending (SIPRI via the World Bank)
 geoQ = strjoin("geo=" + codes, "&");
-pop = fetch_eurostat('demo_pjan', geoQ + "&sex=T&age=TOTAL", fullfile(raw, 'pop.csv'));
-gdp = fetch_eurostat('nama_10_gdp', geoQ + "&na_item=B1GQ&unit=CP_MEUR", fullfile(raw, 'gdp_eur.csv'));
-pps = fetch_eurostat('nama_10_gdp', geoQ + "&na_item=B1GQ&unit=CP_MPPS_EU27_2020", fullfile(raw, 'gdp_pps.csv'));
+pop  = fetch_eurostat('demo_pjan', geoQ + "&sex=T&age=TOTAL", fullfile(raw, 'pop.csv'));
+gdp  = fetch_eurostat('nama_10_gdp', geoQ + "&na_item=B1GQ&unit=CP_MEUR", fullfile(raw, 'gdp_eur.csv'));
+pps  = fetch_eurostat('nama_10_gdp', geoQ + "&na_item=B1GQ&unit=CP_MPPS_EU27_2020", fullfile(raw, 'gdp_pps.csv'));
+debt = fetch_eurostat('gov_10dd_edpt1', geoQ + "&na_item=GD&sector=S13&unit=MIO_EUR", fullfile(raw, 'debt_eur.csv'));
 
-% vojenské výdaje: SIPRI přes Světovou banku, běžné USD. Měna nevadí, těžiště
-% používá jen podíly států v rámci roku.
+% military spending in current USD; the currency does not matter because the
+% centroid only uses each country's share within a year
 mil = fetch_worldbank('MS.MIL.XPND.CD', countries.iso3, fullfile(raw, 'mil_usd.csv'));
 [~, ix] = ismember(mil.iso3, countries.iso3);
 mil.geo = codes(ix);
 
-POP = to_matrix(pop, codes, years);   % [roky x státy]
-GDP = to_matrix(gdp, codes, years);
-PPS = to_matrix(pps, codes, years);
-MIL = to_matrix(mil, codes, years);
+POP  = to_matrix(pop, codes, years);   % [years x countries]
+GDP  = to_matrix(gdp, codes, years);
+PPS  = to_matrix(pps, codes, years);
+MIL  = to_matrix(mil, codes, years);
+DEBT = to_matrix(debt, codes, years);
 
-%% Metriky: každá je matice vah [roky x státy]
+% Eurostat no longer publishes UK debt: UK = IMF debt-to-GDP ratio x Eurostat GDP
+imf = fetch_imf('GG_DEBT_GDP', "GBR", fullfile(raw, 'imf_debt_gbr.csv'));
+uk = codes == "UK";
+[okY, yi] = ismember(imf.year, years);
+DEBT(yi(okY), uk) = imf.value(okY) / 100 .* GDP(yi(okY), uk);
+
+%% Metrics: each is a weight matrix [years x countries]
 M = is_member(countries, years);
 
 W = struct();
-W.staty    = double(M);                                  % 1 stát = 1 hlas (Komise)
-W.plocha   = M .* countries.area_km2';
-W.populace = POP;
-W.ep       = ep_matrix(seats, codes, years);
-W.hdp_eur  = GDP;
-W.hdp_pps  = PPS;
-W.vojenske = MIL;                                        % vojenské výdaje (nominálně)
-
-% čistí plátci / příjemci rozpočtu EU (operační rozpočtové saldo, mil. EUR).
-% Saldo má znaménko a jeho součet je ~0, takže z něj nejde udělat jedno
-% těžiště. Počítají se dvě: plátci vážení velikostí příspěvku, příjemci
-% velikostí toho, co dostávají.
-bud = eu_budget_balance(raw);
-OBB = to_matrix(table(bud.code, bud.year, bud.obb, 'VariableNames', {'geo', 'year', 'value'}), codes, years);
-W.platci   = max(-OBB, 0);
-W.prijemci = max(OBB, 0);
-W.platci(isnan(OBB)) = NaN;  W.prijemci(isnan(OBB)) = NaN;
-W.rada_hlasy = zeros(nY, nC);
+W.states     = double(M);                                % one state = one vote (Commission)
+W.area       = M .* countries.area_km2';
+W.population = POP;
+W.ep_seats   = ep_matrix(seats, codes, years);
+W.gdp_eur    = GDP;                                      % composites and NUTS fallback only
+W.gdp_pps    = PPS;
+W.military   = MIL;                                      % nominal military spending
+W.debt       = DEBT;                                     % general government gross debt
+W.council_votes = zeros(nY, nC);
 
 [~, vRow] = ismember(codes, votes.code);
 for y = 1:nY
     m = M(y, :);
     if years(y) <= 2003, v = votes.w_eu15(vRow); else, v = votes.w_nice(vRow); end
     [~, w] = council_rule(years(y), v(m), POP(y, m));
-    W.rada_hlasy(y, m) = w;
+    W.council_votes(y, m) = w;
 end
 
-%% Těžiště
+%% Centroids
 names = string(fieldnames(W))';
-% v grafech HDP v EUR nahrazují čistí plátci / příjemci; HDP zůstává v CSV
-% a v uložených vahách (kompozit.m, main_nuts.m)
-plotNames = names(names ~= "hdp_eur");
+% GDP in EUR is kept in the CSV and in the saved weights (composite.m,
+% main_nuts.m) but not in the charts
+plotNames = names(names ~= "gdp_eur");
 R = table(years, 'VariableNames', {'year'});
 for k = names
     [R.(k + "_lat"), R.(k + "_lon")] = centroid_series(W.(k), M, countries.lat, countries.lon);
 end
-writetable(R, fullfile(out, 'teziste_po_letech.csv'));
+writetable(R, fullfile(out, 'centroids_by_year.csv'));
 
-%% Souhrn: posun 2000 -> poslední rok s daty
+%% Summary: shift from 2000 to the last year with data
 S = table('Size', [numel(names) 7], ...
     'VariableTypes', ["string" "double" "double" "double" "double" "double" "double"], ...
-    'VariableNames', ["metrika" "rok_do" "lat_2000" "lon_2000" "lat_konec" "lon_konec" "posun_km"]);
-S.azimut_deg = nan(numel(names), 1);
+    'VariableNames', ["metric" "last_year" "lat_2000" "lon_2000" "lat_last" "lon_last" "shift_km"]);
+S.bearing_deg = nan(numel(names), 1);
 for i = 1:numel(names)
     la = R.(names(i) + "_lat");  lo = R.(names(i) + "_lon");
     last = find(~isnan(la), 1, 'last');
     S(i, 1:7) = {names(i), years(last), la(1), lo(1), la(last), lo(last), ...
         haversine_km(la(1), lo(1), la(last), lo(last))};
-    S.azimut_deg(i) = bearing_deg(la(1), lo(1), la(last), lo(last));
+    S.bearing_deg(i) = bearing_deg(la(1), lo(1), la(last), lo(last));
 end
 disp(S)
-writetable(S, fullfile(out, 'souhrn_posunu.csv'));
+writetable(S, fullfile(out, 'shift_summary.csv'));
 
-% Skoky při rozšířeních / Brexitu pro populační metriku
-fprintf('\nMeziroční posun populačního těžiště (km):\n');
-d = haversine_km(R.populace_lat(1:end-1), R.populace_lon(1:end-1), ...
-                 R.populace_lat(2:end),   R.populace_lon(2:end));
+% Jumps at enlargements / Brexit for the population metric
+fprintf('\nYear-on-year shift of the population centroid (km):\n');
+d = haversine_km(R.population_lat(1:end-1), R.population_lon(1:end-1), ...
+                 R.population_lat(2:end),   R.population_lon(2:end));
 for y = 1:numel(d), fprintf('  %d -> %d: %7.1f\n', years(y), years(y+1), d(y)); end
 
-%% Grafy + uložení vah (results/vahy_staty.mat) pro navazující analýzy
+%% Charts + saved weights (results/weights_states.mat) for the follow-up scripts
 plot_results(R, plotNames, years, out);
-plot_budget_axis(R, OBB, M, years, out);
-save(fullfile(out, 'vahy_staty.mat'), 'W', 'M', 'countries', 'years', 'R', 'OBB');
+save(fullfile(out, 'weights_states.mat'), 'W', 'M', 'countries', 'years', 'R');
 
 %% ---------------------------------------------------------------------
-function X = to_matrix(T, codes, years)
-% long tabulka (geo, year, value) -> matice [roky x státy], chybějící = NaN
-X = nan(numel(years), numel(codes));
-[okG, g] = ismember(T.geo, codes);
-[okY, y] = ismember(T.year, years);
-ok = okG & okY;
-X(sub2ind(size(X), y(ok), g(ok))) = T.value(ok);
-end
-
 function E = ep_matrix(seats, codes, years)
-% rozdělení mandátů EP platné k 31. 12. daného roku
+% EP seat allocation valid on 31 December of each year
 termStart = [1999 2004 2009 2014 2020 2024];
 cols = "t" + termStart;
 [~, row] = ismember(codes, seats.code);

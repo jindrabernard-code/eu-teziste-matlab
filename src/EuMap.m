@@ -1,18 +1,19 @@
 classdef EuMap < handle
-%EUMAP Jednoduchá mapa Evropy na obyčejných osách (bez Mapping Toolboxu).
-%   m = EuMap(parent, latLim, lonLim, withLegend) nakreslí státy: členy EU
-%   světle modře, Spojené království (člen do 2020) světleji, ostatní šedě,
-%   moře bíle. Data se pak kreslí metodami se zeměpisnými souřadnicemi:
+%EUMAP Simple map of Europe on ordinary axes (no Mapping Toolbox needed).
+%   m = EuMap(parent, latLim, lonLim, withLegend) draws the countries: EU
+%   members light blue, the United Kingdom (member until 2020) lighter,
+%   others grey, sea white. Data are then drawn with methods that take
+%   geographic coordinates:
 %       m.line(lat, lon, '-', 'Color', c)       ~ geoplot
 %       m.scatter(lat, lon, sz, c, 'filled')    ~ geoscatter
-%       m.text(lat, lon, 'popisek')
-%   m.showMembers(clenove, byvali) přebarví státy podle členství (animace).
-%   m.Ax jsou podkladové osy (title, legend, colormap, colorbar, Layout).
+%       m.text(lat, lon, 'label')
+%   m.showMembers(members, former) recolours countries by membership (animation).
+%   m.Ax are the underlying axes (title, legend, colormap, colorbar, Layout).
 %
-%   Projekce: ekvidistantní válcová se standardní rovnoběžkou 50° s. š.
-%   (x = lon * cos 50°, y = lat). V měřítku Evropy dostatečné a hlavně
-%   stejné pro všechny mapy projektu.
-%   Hranice: GISCO CNTR_RG_10M_2020, stažené jednou do data/raw/.
+%   Projection: equirectangular with standard parallel 50° N
+%   (x = lon * cos 50°, y = lat). Good enough at the scale of Europe and,
+%   above all, the same for every map in the project.
+%   Borders: GISCO CNTR_RG_10M_2020, downloaded once into data/raw/.
 
     properties (Constant)
         K = cosd(50)
@@ -25,9 +26,9 @@ classdef EuMap < handle
     end
     properties
         Ax
-        Codes       % kódy států (EL, UK, ...) v pořadí Polys
-        Polys       % Polygon handle pro každý stát
-        LegEU       % položky legendy (prázdné plochy), DisplayName lze měnit
+        Codes       % country codes (EL, UK, ...) in the order of Polys
+        Polys       % Polygon handle for every country
+        LegEU       % legend entries (empty patches), DisplayName can be changed
         LegFormer
     end
 
@@ -44,16 +45,16 @@ classdef EuMap < handle
             m.Polys = plot(ax, shapes, 'FaceAlpha', 1, 'LineWidth', 0.4, 'HandleVisibility', 'off');
             hv = 'off';  if withLegend, hv = 'on'; end
             m.LegEU = fill(ax, NaN, NaN, EuMap.EU_COLOR, 'EdgeColor', EuMap.EU_EDGE, ...
-                'DisplayName', 'Členské státy EU (2025)', 'HandleVisibility', hv);
+                'DisplayName', 'EU members (2025)', 'HandleVisibility', hv);
             m.LegFormer = fill(ax, NaN, NaN, EuMap.UK_COLOR, 'EdgeColor', EuMap.EU_EDGE, ...
-                'LineStyle', ':', 'DisplayName', 'Spojené království (člen do 2020)', 'HandleVisibility', hv);
+                'LineStyle', ':', 'DisplayName', 'United Kingdom (member until 2020)', 'HandleVisibility', hv);
             C = readtable(fullfile(EuMap.root(), 'data', 'countries.csv'), 'TextType', 'string');
             m.showMembers(C.code(ismissing(C.leave_date) | C.leave_date == ""), "UK");
             m.limits(latLim, lonLim);
         end
 
         function showMembers(m, members, former)
-            % členové modře, bývalí členové světle modře, ostatní šedě
+            % members blue, former members light blue, others grey
             if nargin < 3, former = strings(0); end
             isM = ismember(m.Codes, members);
             isF = ismember(m.Codes, former) & ~isM;
@@ -93,9 +94,9 @@ classdef EuMap < handle
         end
 
         function [S, codes] = shapes()
-            % polyshape pro každý stát (v projekci), drží se v paměti session.
-            % Každý stát zvlášť: sjednocení do jednoho tvaru by ze Švýcarska
-            % udělalo díru a zmizely by hranice mezi státy.
+            % one polyshape per country (projected), kept in memory for the
+            % session. Countries are kept separate: a union of all of them
+            % would turn Switzerland into a hole and erase internal borders.
             persistent cS cCodes
             if ~isempty(cS), S = cS; codes = cCodes; return, end
             file = fullfile(EuMap.root(), 'data', 'raw', 'countries_10M_2020.geojson');
@@ -110,7 +111,7 @@ classdef EuMap < handle
             ws = warning('off', 'MATLAB:polyshape:repairedBySimplify');
             for i = 1:numel(F)
                 rings = geojson_rings(F(i).geometry.coordinates);
-                % jen Evropa a okolí (zrychlí kreslení, zámoří nepotřebujeme)
+                % Europe and surroundings only (faster drawing, no overseas territories)
                 keep = cellfun(@(r) any(r(:, 2) > 25 & r(:, 2) < 75 & r(:, 1) > -35 & r(:, 1) < 60), rings);
                 rings = rings(keep);
                 if isempty(rings), continue, end

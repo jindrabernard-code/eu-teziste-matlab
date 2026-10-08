@@ -1,23 +1,23 @@
 function h = place_labels(gx, px, lat, lon, txt, obsLat, obsLon, fontSize)
-%PLACE_LABELS Popisky bodů na geoaxes tak, aby nepřekrývaly čáry ani body.
+%PLACE_LABELS Label points on geoaxes without covering lines or points.
 %   gx       geoaxes
-%   px       převod na pixely panelu (geo_pixel_map)
-%   lat, lon souřadnice popisovaných bodů, txt jejich texty (string)
-%   obsLat/obsLon lomená čára trajektorie: její úsečky i vrcholy jsou
-%            překážky, které popisek nesmí zakrýt
-%   Pro každý popisek se zkusí 8 směrů x 3 vzdálenosti od bodu. Vyhraje
-%   pozice s nejmenší penalizací: průsečík s úsečkou, zakrytý bod, překryv
-%   s již umístěným popiskem, přesah mimo panel. Při shodě rozhoduje
-%   menší vzdálenost a preference vpravo nahoře.
+%   px       pixel mapping of the panel (geo_pixel_map)
+%   lat, lon coordinates of the labelled points, txt their texts (string)
+%   obsLat/obsLon the track polyline: its segments and vertices are
+%            obstacles a label must not cover
+%   For every label 8 directions x 3 distances from the point are tried.
+%   The position with the lowest penalty wins: crossing a segment, covering
+%   a point, overlapping an already placed label, sticking out of the panel.
+%   Ties are broken by a shorter distance and a preference for upper right.
 if nargin < 8, fontSize = 8; end
 [P(:, 1), P(:, 2)] = px.toPx(lat, lon);
 [O(:, 1), O(:, 2)] = px.toPx(obsLat, obsLon);
 O = O(all(~isnan(O), 2), :);
 segA = O(1:end-1, :);  segB = O(2:end, :);
 
-fontPx = fontSize * 96 / 72;                      % body -> pixely
+fontPx = fontSize * 96 / 72;                      % points -> pixels
 hTxt = fontPx * 1.15;
-angles = [30 -30 150 -150 90 -90 0 180];          % pořadí = preference
+angles = [30 -30 150 -150 90 -90 0 180];          % order = preference
 dists = [6 12 20];
 boxes = zeros(0, 4);                              % [xmin ymin xmax ymax]
 h = gobjects(numel(txt), 1);
@@ -49,7 +49,7 @@ end
 end
 
 function [box, ha, va] = text_box(anchor, c, w, h)
-% obdélník textu podle směru: vpravo od bodu zarovnat vlevo atd.
+% text box for a direction: right of the point -> left-aligned, etc.
 if c(1) > 0.3,      x = [anchor(1), anchor(1) + w];          ha = 'left';
 elseif c(1) < -0.3, x = [anchor(1) - w, anchor(1)];          ha = 'right';
 else,               x = anchor(1) + [-w w] / 2;              ha = 'center';
@@ -74,7 +74,7 @@ tf = B(:, 1) < b(3) & B(:, 3) > b(1) & B(:, 2) < b(4) & B(:, 4) > b(2);
 end
 
 function tf = seg_hits_box(A, B, b)
-% průsečík úseček A-B s obdélníkem b (Liang–Barsky ořez)
+% does segment A-B intersect box b (Liang–Barsky clipping)
 tf = false(size(A, 1), 1);
 for i = 1:size(A, 1)
     p0 = A(i, :);  dlt = B(i, :) - p0;

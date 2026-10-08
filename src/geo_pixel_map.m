@@ -1,6 +1,6 @@
 function px = geo_pixel_map(gx)
-%GEO_PIXEL_MAP Převod lat/lon <-> pixely uvnitř geoaxes (Web Mercator).
-%   Volat po drawnow, kdy už geoaxes zná skutečné limity a velikost.
+%GEO_PIXEL_MAP Convert lat/lon <-> pixels inside geoaxes (Web Mercator).
+%   Call after drawnow, when the geoaxes know their actual limits and size.
 pos = getpixelposition(gx);
 latL = gx.LatitudeLimits;  lonL = gx.LongitudeLimits;
 merc = @(la) log(tand(45 + la / 2));

@@ -1,28 +1,30 @@
 function [W, reg, proxyUsed, verUsed] = regional_weights(T, G, countries, years, M, natTot, Tproxy, refVer)
-%REGIONAL_WEIGHTS Rozpočítá národní hodnotu metriky do regionů NUTS.
-%   T      long tabulka z Eurostatu (geo, year, value), všechny úrovně NUTS
-%   G      tabulka regionů (load_nuts_geometry, více verzí NUTS pod sebou)
-%   natTot [roky x státy] záložní národní součty (NaN = nemáme), např. HDP
-%          z nama_10_gdp tam, kde regionální data ještě nevyšla
-%   Tproxy volitelná tabulka jiné metriky (typicky populace), podle které
-%          se národní součet rozdělí, když stát nemá regionální data vůbec
-%          (UK: Eurostat z regionálních účtů vyřadil HDP i zaměstnanost)
-%   refVer [roky x státy] verze NUTS, kterou musí daný stát a rok použít
-%          (NaN = libovolná). Kompozity potřebují, aby všechny metriky
-%          stály na stejném rozdělení regionů; jinak by region, který
-%          v jedné metrice chybí, dostal v geometrickém průměru nulu.
-%          Když metrika v dané verzi data nemá, rozdělí se podle proxy.
-%   Výstup W [roky x regiony], reg (řádky G, které se použily), proxyUsed
-%   (kódy států, u kterých se použila proxy) a verUsed [roky x státy].
+%REGIONAL_WEIGHTS Distribute a national metric over NUTS regions.
+%   T      long Eurostat table (geo, year, value) with all NUTS levels
+%   G      table of regions (load_nuts_geometry, several NUTS versions stacked)
+%   natTot [years x countries] fallback national totals (NaN = unknown), e.g.
+%          GDP from nama_10_gdp where regional data are not out yet
+%   Tproxy optional table of another metric (typically population) used to
+%          split the national total when a country has no regional data at
+%          all (UK: Eurostat dropped its GDP and employment from the regional
+%          accounts)
+%   refVer [years x countries] NUTS version the country must use in that
+%          year (NaN = any). Composites need every metric on the same
+%          partition, otherwise a region missing in one metric would get
+%          zero in the geometric mean. If the metric has no data in that
+%          version, the proxy is used.
+%   Output W [years x regions], reg (rows of G that were used), proxyUsed
+%   (codes of countries where the proxy was used) and verUsed [years x countries].
 %
-%   Regionální řady Eurostatu jsou děravé a kódy regionů se mezi verzemi
-%   NUTS mění. Proto pro každý stát a rok:
-%     1. národní součet = řádek státu v T, jinak natTot, jinak součet regionů
-%     2. rozložení uvnitř státu = podíly regionů z nejbližšího roku, kde je
-%        pro některou verzi NUTS pokrytí kompletní (přednost má novější verze)
-%     3. váha regionu = součet x podíl
-%   Součty za státy tak sedí s národními daty a nemůže dojít ke dvojímu
-%   započtení starého a nového kódu téhož území.
+%   Eurostat regional series have gaps and region codes change between
+%   NUTS versions. So for every country and year:
+%     1. national total = the country's row in T, else natTot, else the
+%        sum of its regions
+%     2. split within the country = regional shares from the nearest year
+%        with complete coverage for some NUTS version (newer preferred)
+%     3. region weight = total x share
+%   Country totals therefore match national data, and an old and a new code
+%   for the same territory can never be counted twice.
 if nargin < 7, Tproxy = []; end
 if nargin < 8 || isempty(refVer), refVer = nan(numel(years), height(countries)); end
 verUsed = nan(numel(years), height(countries));
@@ -32,22 +34,22 @@ if ~isempty(Tproxy)
 end
 
 W = zeros(numel(years), height(G));
-bad = false(numel(years), 1);          % rok, kde některému členovi chybí data
+bad = false(numel(years), 1);          % a year in which some member has no data
 proxyUsed = strings(0);
 for j = 1:height(countries)
     c = countries.code(j);
     [hasC, cRow] = ismember(c, dataCodes);
     for y = find(M(:, j))'
-        % 1. národní součet
+        % 1. national total
         tot = NaN;
         [~, ty] = ismember(years(y), dataYears);
         if hasC && ty > 0, tot = D(cRow, ty); end
         if isnan(tot) && ~isempty(natTot), tot = natTot(y, j); end
-        % 2. rozložení uvnitř státu
+        % 2. split within the country
         [r, x, dist] = nuts_split(D, dataYears, hasRow, rowOf, G, c, years(y), refVer(y, j));
         if isempty(r) && ~isempty(Tproxy)
             [r, x] = nuts_split(Dp, pYears, pHas, pRow, G, c, years(y), refVer(y, j));
-            dist = inf;                                % součet z proxy nebrat
+            dist = inf;                                % never take the total from the proxy
             if ~isempty(r), proxyUsed(end+1) = c; end %#ok<AGROW>
         end
         if isempty(r), bad(y) = true; continue, end

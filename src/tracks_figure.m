@@ -1,14 +1,14 @@
 function H = tracks_figure(T, series, ttl, figWidth)
-%TRACKS_FIGURE Sestaví obrázek posunů těžiště (přehled EU + výřezy po řadách).
-%   Nic nevykreslí "do roku": data se doplní přes tracks_set_year(H, rok),
-%   takže stejný obrázek slouží pro statickou mapu i pro animaci.
-%   T      tabulka se sloupcem year a sloupci <prefix>_lat / <prefix>_lon
-%   series cell {popisek, prefix} nebo {popisek, prefix, vlastniVyrez}:
-%          řada s vlastniVyrez = true dostane vlastní výřez (je mnohem delší
-%          než ostatní, např. čistí příjemci rozpočtu) a nepočítá se do
-%          společného výřezu ostatních panelů
-%   Přehled je EuMap (státy EU modře), výřezy jsou geoaxes s podkladem
-%   grayland (bez zvýraznění států, ať trajektorie vyniknou).
+%TRACKS_FIGURE Build the centroid-shift figure (EU overview + one zoomed panel per series).
+%   Draws no data yet: tracks_set_year(H, year) fills it "up to a year", so
+%   the same figure serves the static map and every animation frame.
+%   T      table with a year column and <prefix>_lat / <prefix>_lon columns
+%   series cell {label, prefix} or {label, prefix, ownExtent}: a series
+%          with ownExtent = true gets its own zoom (it is much longer than
+%          the others, e.g. net receivers of the EU budget) and is left out
+%          of the shared zoom of the other panels
+%   The overview is an EuMap (EU members in blue), the panels are geoaxes
+%   on the 'grayland' basemap (no highlighting, so the tracks stand out).
 if nargin < 4, figWidth = 1900; end
 H.years = T.year;
 H.ttl = ttl;
@@ -24,12 +24,12 @@ countries = readtable(fullfile(EuMap.root(), 'data', 'countries.csv'), 'TextType
 H.codes = countries.code;
 H.member = is_member(countries, H.years);
 
-% společný výřez pro všechny panely, ať jsou posuny srovnatelné
+% shared zoom for all panels, so that shifts are comparable
 H.own = false(1, n);
 if size(series, 2) >= 3, H.own = cellfun(@(x) isequal(x, true), series(:, 3))'; end
 [H.latLim, H.lonLim] = extent(H.la(~H.own), H.lo(~H.own));
 H.panelLat = repmat({H.latLim}, 1, n);  H.panelLon = repmat({H.lonLim}, 1, n);
-H.labelKm = 25 * ones(1, n);          % práh popisku skoku (km), viz tracks_set_year
+H.labelKm = 25 * ones(1, n);          % jump threshold for a year label (km), see tracks_set_year
 for i = find(H.own)
     [H.panelLat{i}, H.panelLon{i}] = extent(H.la(i), H.lo(i));
     H.labelKm(i) = 25 * max(1, diff(H.panelLon{i}) / diff(H.lonLim));
@@ -40,7 +40,7 @@ H.fig = figure('Visible', 'off', 'Position', [50 50 figWidth 430 * nRow * figWid
 H.tl = tiledlayout(H.fig, nRow, nCol, 'TileSpacing', 'compact', 'Padding', 'compact');
 title(H.tl, ttl, 'FontWeight', 'bold', 'FontSize', 16);
 
-% přehled EU
+% EU overview
 H.map = EuMap(H.tl, [34 71], [-11 35], true);
 H.map.Ax.Layout.Tile = 1;  H.map.Ax.Layout.TileSpan = [2 2];
 H.cols = [lines(7); 0 0 0; 0.5 0.5 0.5; 0.6 0.3 0.1; 0.2 0.6 0.6; 0.8 0.5 0.8; 0.4 0.4 0.9];
@@ -54,12 +54,14 @@ for i = 1:n
 end
 H.map.line(H.latLim([1 2 2 1 1]), H.lonLim([1 1 2 2 1]), 'k--', 'LineWidth', 1, 'HandleVisibility', 'off');
 legend(H.map.Ax, 'Location', 'northwest', 'FontSize', 8);
-title(H.map.Ax, 'Přehled EU (čárkovaně = výřez v panelech)');
+title(H.map.Ax, 'EU overview (dashed = zoom used in the panels)');
 
-% výřezy po řadách
+% zoomed panels, one per series
 free = setdiff(1:nRow * nCol, [1 2 nCol+1 nCol+2]);
+span = [1 1];
+if n <= 2, free = [3 4];  span = [2 1]; end    % two series: panels span both rows
 for i = 1:n
-    gx = geoaxes(H.tl);  gx.Layout.Tile = free(i);
+    gx = geoaxes(H.tl);  gx.Layout.Tile = free(i);  gx.Layout.TileSpan = span;
     try, geobasemap(gx, 'grayland'); catch, geobasemap(gx, 'darkwater'); end
     hold(gx, 'on');
     geolimits(gx, H.panelLat{i}, H.panelLon{i});
@@ -76,12 +78,12 @@ for i = 1:n
     end
     H.seg{i} = seg;  H.segYear{i} = segYear;
     H.pts(i) = geoscatter(gx, NaN, NaN, 28, NaN, 'filled', 'MarkerEdgeColor', 'k', 'LineWidth', 0.3);
-    H.cur(i) = geoscatter(gx, NaN, NaN, 140, 'k', 'LineWidth', 1.8);   % aktuální rok
+    H.cur(i) = geoscatter(gx, NaN, NaN, 140, 'k', 'LineWidth', 1.8);   % current year
     colormap(gx, H.cmap);  clim(gx, [H.years(1) H.years(end)]);
     H.gx(i) = gx;
 end
-cb = colorbar(H.gx(end));  cb.Label.String = 'rok';
-% převod na pixely pro rozmisťování popisků (až po vykreslení rozvržení)
+cb = colorbar(H.gx(end));  cb.Label.String = 'year';
+% pixel mapping for label placement (only once the layout is drawn)
 drawnow;
 for i = 1:n, H.px{i} = geo_pixel_map(H.gx(i)); end
 end

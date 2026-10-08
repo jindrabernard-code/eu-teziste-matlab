@@ -1,16 +1,17 @@
 function [W, alpha] = composite_weights(S, alpha, method)
-%COMPOSITE_WEIGHTS Složí několik metrik do jedné váhy každé jednotky.
-%   S      struct podílových matic [roky x jednotky] (viz shares.m)
-%   alpha  struct vah metrik (pole = názvy metrik), nebo 'entropy' / 'pca'
-%          pro objektivně odvozené váhy
-%   method 'linear'    w = sum_k a_k * s_k          (aritmetický průměr)
-%          'geometric' w = prod_k s_k ^ a_k          (geometrický průměr)
+%COMPOSITE_WEIGHTS Combine several metrics into one weight per unit.
+%   S      struct of share matrices [years x units] (see shares.m)
+%   alpha  struct of metric weights (field = metric name), or 'entropy' /
+%          'pca' for objectively derived weights
+%   method 'linear'    w = sum_k a_k * s_k          (arithmetic mean)
+%          'geometric' w = prod_k s_k ^ a_k          (geometric mean)
 %
-%   Lineární kompozit má hezkou vlastnost: jeho těžiště je (ve 3D) přesně
-%   vážený průměr těžišť jednotlivých metrik. Geometrický ne: trestá
-%   nevyváženost (stát velký populací, ale chudý dostane méně než
-%   průměr obou) a metrika, která je u všech stejná (1 stát = 1 hlas),
-%   se v něm vůbec neprojeví.
+%   The linear composite has a neat property: its centroid is (in 3D)
+%   exactly the weighted average of the centroids of the individual
+%   metrics. The geometric one is not: it penalises imbalance (a country
+%   that is large by population but poor gets less than the average of its
+%   shares), and a metric that is equal for everyone (one state = one vote)
+%   has no effect on it at all.
 if ischar(alpha) || isstring(alpha)
     switch alpha
         case 'entropy', alpha = entropy_alpha(S);
@@ -32,9 +33,9 @@ for k = 1:numel(names), alpha.(names(k)) = a(k); end
 end
 
 function alpha = entropy_alpha(S)
-% Metoda entropických vah: metrika, která je mezi jednotkami rozložená
-% nerovnoměrněji (nižší entropie), nese víc informace a dostane větší
-% váhu. Metrika rovnoměrná u všech (státy 1:1) dostane ~0.
+% Entropy weight method: a metric that is distributed more unevenly across
+% units (lower entropy) carries more information and gets a larger weight.
+% A metric that is equal for all units (one state = one vote) gets ~0.
 names = string(fieldnames(S))';
 d = zeros(size(names));
 for k = 1:numel(names)
@@ -47,16 +48,16 @@ alpha = cell2struct(num2cell(d / sum(d)), cellstr(names), 2);
 end
 
 function alpha = pca_alpha(S)
-% Váhy podle 1. hlavní komponenty (postup z OECD Handbook on Composite
-% Indicators): standardizované podíly, čtverce ladění PC1, průměr přes roky.
+% Weights from the first principal component (OECD Handbook on Composite
+% Indicators): standardised shares, squared PC1 loadings, averaged over years.
 names = string(fieldnames(S))';
 nY = size(S.(names(1)), 1);
 acc = zeros(1, numel(names));  cnt = 0;
 for y = 1:nY
     X = cell2mat(cellfun(@(k) S.(k)(y, :)', cellstr(names), 'UniformOutput', false));
-    X = X(all(X > 0, 2) & all(~isnan(X), 2), :);     % jen členové s daty
+    X = X(all(X > 0, 2) & all(~isnan(X), 2), :);     % members with data only
     if size(X, 1) < 3, continue, end
-    sd = std(X);  keep = sd > 0;                      % konstantní metrika = 0
+    sd = std(X);  keep = sd > 0;                      % constant metric = 0
     Z = (X(:, keep) - mean(X(:, keep))) ./ sd(keep);
     [~, ~, V] = svd(Z, 'econ');
     l = zeros(1, numel(names));  l(keep) = V(:, 1)'.^2;

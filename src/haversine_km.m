@@ -1,5 +1,5 @@
 function d = haversine_km(lat1, lon1, lat2, lon2)
-%HAVERSINE_KM Vzdálenost po povrchu Země v km (koule, R = 6371 km).
+%HAVERSINE_KM Great-circle distance in km (spherical Earth, R = 6371 km).
 R = 6371;
 p1 = deg2rad(lat1); p2 = deg2rad(lat2);
 dp = p2 - p1; dl = deg2rad(lon2 - lon1);
