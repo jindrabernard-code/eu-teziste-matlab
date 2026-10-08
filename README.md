@@ -308,3 +308,45 @@ společnou paletou přes `rgb2ind` + `imwrite`. Funguje to i v `matlab -batch`.
 ![varianta 1](results/posuny_1_metriky.png)
 ![varianta 2](results/posuny_2_kompozit.png)
 ![varianta 3](results/posuny_3_nuts3.png)
+
+## Zdroje dat a licence
+
+- Obyvatelstvo, HDP, zaměstnanost: © European Union, Eurostat (`demo_pjan`, `nama_10_gdp`,
+  `nama_10_pe`, `demo_r_pjanaggr3`, `nama_10r_3gdp`, `nama_10r_3empers`), CC BY 4.0.
+- Hranice států a regionů NUTS: © EuroGeographics for the administrative boundaries (GISCO).
+- Vážené hlasy v Radě a mandáty v EP: smlouvy EU a rozhodnutí o složení Evropského
+  parlamentu (ručně přepsáno do `data/`).
+
+Stažená data se ukládají do `data/raw/`, která není v repozitáři. Při prvním běhu se
+stáhne vše potřebné.
+
+## Zjednodušení a známé limity
+
+- **Stát = jeden bod** v `main.m`/`kompozit.m` (přibližný střed území). NUTS-3 ukazuje,
+  že výsledná chyba je na úrovni EU jen 7–25 km.
+- NUTS: regionální rozložení v letech bez dat se přebírá z nejbližšího roku a UK
+  se ekonomicky rozpočítává podle populace.
+- Přechodná období se ignorují: hlasy v Radě květen–říjen 2004, volitelný systém
+  z Nice v letech 2014–2017, 18 dodatečných poslanců EP od prosince 2011.
+- Pravidlo z Nice počítá s populační pojistkou 62 % vždy (ve skutečnosti se uplatňovala jen na žádost).
+- Banzhaf je odhad Monte Carlem s 1e5 koalicemi, chyba je v řádu 0,1 %.
+- Zámořská území (Kanárské ostrovy, Azory, francouzské DOM) se ve středu státu nepočítají.
+  Do populace a HDP z Eurostatu ale zahrnutá jsou.
+
+## Další kroky (návrh roadmapy)
+
+1. ~~NUTS-3 rozlišení~~ hotovo (`main_nuts.m`). Dál: ekonomická data UK z ONS
+   (ITL3) místo populační proxy, mřížka 1 km² (GEOSTAT) pro populaci.
+2. **Přesný Banzhaf** pomocí generujících funkcí / dynamického programování místo MC
+   (u dvojí většiny je to 2D DP: počet států × populace). To je dobrá ukázka algoritmu.
+3. **Bootstrap / citlivostní analýza:** jak moc se těžiště pohne, když středy států posuneme
+   o ±50 km.
+4. ~~Animace~~ hotovo (`animace_posunu.m`). Dál: MP4 přes `VideoWriter` pro prezentace.
+5. **Unit testy** (`matlab.unittest`): těžiště dvou bodů na rovníku, symetrie, kontrolní
+   součty hlasů (87/321/345/352) a mandátů.
+6. **App Designer GUI:** zaškrtávání metrik, slider roku, posuvníky vah kompozitu
+   (`composite_weights` je na to připravená).
+7. **Live Script** (`.mlx`) jako prezentační verze do portfolia.
+8. **Nejistota kompozitu:** Monte Carlo přes náhodné váhy α (Dirichlet), výsledkem je
+   „oblak“ možných těžišť místo jednoho bodu. To je poctivější odpověď na otázku,
+   kde je střed EU.
