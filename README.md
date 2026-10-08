@@ -3,14 +3,15 @@
 Kam se posouvá „střed“ Evropské unie, když ho vážíme hlasy v Radě, mandáty v EP,
 obyvatelstvem nebo ekonomikou? A jak s ním pohnula rozšíření 2004/2007/2013 a brexit?
 
-Projekt počítá těžiště podle jednotlivých metrik (každý stát jako jeden bod) a jako
-kompozitní index více metrik. Všechno běží v základním MATLABu nad živými daty Eurostatu.
+Projekt počítá těžiště ve třech variantách: podle jednotlivých metrik (každý stát jako
+jeden bod), jako kompozitní index více metrik a na úrovni regionů NUTS-2/NUTS-3. Všechno běží v základním MATLABu nad živými daty
+Eurostatu.
 
 ## Spuštění
 
 ```matlab
 cd eu-teziste-matlab   % kořen repozitáře
-run_all          % = main; kompozit
+run_all          % = main; kompozit; main_nuts
 ```
 
 Při prvním běhu se stáhnou data z Eurostat API do `data/raw/` (obyvatelstvo `demo_pjan`,
@@ -24,6 +25,7 @@ světle modré, Spojené království (člen do 2020) světlejší a ostatní st
 | `run_all.m` | spustí všechno níže v tomto pořadí |
 | `main.m` | úroveň států: data → váhy → těžiště → souhrn → grafy |
 | `kompozit.m` | kompozitní indexy na úrovni států |
+| `main_nuts.m` | regiony NUTS-2 / NUTS-3: demografie + ekonomika, kompozity, medián |
 | `src/composite_weights.m` | skládání metrik: lineárně / geometricky, váhy ručně / entropie / PCA |
 | `src/geometric_median.m` | Weberův bod na kouli (Weiszfeld + Vardi–Zhang) |
 | `src/regional_weights.m` | rozpočet národních součtů do regionů NUTS (díry v datech, verze NUTS) |
@@ -216,3 +218,60 @@ Medián leží asi o 1° severněji než těžiště, protože ho jih (Itálie, 
 penalizuje státy s vysokou populací a nízkým HDP, tedy hlavně východ.
 
 ![kompozit](results/kompozit_mapa.png)
+
+## Regiony NUTS-2 / NUTS-3 (`main_nuts.m`)
+
+Místo jednoho bodu na stát se počítá s regiony NUTS-2 (~240) nebo NUTS-3 (~1 100–1 300
+podle verze). Bod regionu je těžiště jeho polygonu z GISCO. Zámořská území se vyřazují
+a jejich váha zůstává státu. Metriky jsou jen demografické a ekonomické:
+
+| Metrika | Dataset Eurostatu | Roky |
+|---|---|---|
+| populace | `demo_r_pjanaggr3` | 2000–2025 |
+| populace 15–64 let | `demo_r_pjanaggr3` | 2000–2025 |
+| zaměstnanost | `nama_10r_3empers` (národní záloha `nama_10_pe`) | 2000–2024 |
+| HDP EUR, HDP PPS | `nama_10r_3gdp` (národní záloha `nama_10_gdp`) | 2000–2024 |
+| plocha | z polygonů | – |
+
+Kompozity: demografický (populace + 15–64), ekonomický (HDP EUR 0,4, PPS 0,3,
+zaměstnanost 0,3), vyvážený, geometrický, entropie, PCA.
+
+**Data jsou děravá, proto se nepoužívají přímo.** Pro každý stát a rok se vezme:
+
+1. národní součet (sedí na národní statistiky),
+2. rozdělení uvnitř státu podle regionů z nejbližšího roku, kde je pro danou verzi
+   NUTS pokrytí kompletní (např. HDP za rok 2025 má rozložení z let 2023/24),
+3. verze NUTS (2010–2024) společná pro všechny metriky daného státu a roku. Bez toho
+   by v geometrickém kompozitu region, který v jedné metrice chybí, dostal nulu.
+   Tuhle chybu jsem v prvním běhu opravdu chytil: geometrický kompozit za rok 2000
+   ujel o 1° na západ.
+4. **UK:** Eurostat z regionálních účtů vyřadil HDP i zaměstnanost UK, proto se
+   národní součet UK rozděluje podle regionální populace (aproximace pro 2000–2019).
+
+**Výsledky na NUTS-3:**
+
+| Metrika | 2000 | 2025 | Posun |
+|---|---|---|---|
+| Plocha | 50,67 N 6,99 E | 50,24 N 11,66 E | 334 km |
+| Zaměstnanost | 48,61 N 5,54 E | 48,11 N 9,64 E | 308 km |
+| Populace | 48,25 N 5,61 E | 47,87 N 9,58 E | 298 km |
+| Populace 15–64 | 48,20 N 5,66 E | 47,84 N 9,57 E | 294 km |
+| Kompozit vyvážený | 48,57 N 5,64 E | 48,15 N 9,23 E | 270 km |
+| Kompozit ekonomický | 48,92 N 5,64 E | 48,45 N 8,89 E | 244 km |
+| HDP PPS | 48,72 N 5,78 E | 48,39 N 8,87 E | 230 km |
+| HDP EUR | 49,31 N 5,60 E | 48,74 N 8,33 E | 209 km |
+| Medián populace | 49,26 N 5,70 E | 48,65 N 9,39 E | 278 km |
+
+**Co z toho plyne:**
+
+- **Jemnější rozlišení na výsledku skoro nic nemění.** Pro rok 2025 je rozdíl mezi
+  těžištěm ze států a z NUTS-3 jen 7–9 km. V roce 2000 je to u populace a HDP
+  ~25 km (NUTS-3 vychází jižněji). Uvnitř států je populace rozložená jinak, než leží
+  středy jejich území, ale na úrovni celé EU se tyto odchylky z velké části vyruší.
+- Zaměstnanost se posunula o něco víc než populace (308 vs. 298 km). Příčinu by
+  bylo potřeba ověřit rozkladem posunu po státech.
+- Pracovní populace (15–64) leží o pár km jižněji a západněji než celá populace,
+  ale rozdíl je malý.
+
+![regiony](results/nuts3_mapa.png)
+![rozlišení](results/nuts_srovnani.png)
