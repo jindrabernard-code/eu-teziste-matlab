@@ -3,7 +3,10 @@ function H = tracks_figure(T, series, ttl, figWidth)
 %   Nic nevykreslí "do roku": data se doplní přes tracks_set_year(H, rok),
 %   takže stejný obrázek slouží pro statickou mapu i pro animaci.
 %   T      tabulka se sloupcem year a sloupci <prefix>_lat / <prefix>_lon
-%   series cell {popisek, prefix}
+%   series cell {popisek, prefix} nebo {popisek, prefix, vlastniVyrez}:
+%          řada s vlastniVyrez = true dostane vlastní výřez (je mnohem delší
+%          než ostatní, např. čistí příjemci rozpočtu) a nepočítá se do
+%          společného výřezu ostatních panelů
 %   Přehled je EuMap (státy EU modře), výřezy jsou geoaxes s podkladem
 %   grayland (bez zvýraznění států, ať trajektorie vyniknou).
 if nargin < 4, figWidth = 1900; end
@@ -22,10 +25,15 @@ H.codes = countries.code;
 H.member = is_member(countries, H.years);
 
 % společný výřez pro všechny panely, ať jsou posuny srovnatelné
-LA = vertcat(H.la{:});  LO = vertcat(H.lo{:});
-pad = 0.35;
-H.latLim = [min(LA) max(LA)] + [-pad pad];
-H.lonLim = [min(LO) max(LO)] + [-pad pad] * 1.5;
+H.own = false(1, n);
+if size(series, 2) >= 3, H.own = cellfun(@(x) isequal(x, true), series(:, 3))'; end
+[H.latLim, H.lonLim] = extent(H.la(~H.own), H.lo(~H.own));
+H.panelLat = repmat({H.latLim}, 1, n);  H.panelLon = repmat({H.lonLim}, 1, n);
+H.labelKm = 25 * ones(1, n);          % práh popisku skoku (km), viz tracks_set_year
+for i = find(H.own)
+    [H.panelLat{i}, H.panelLon{i}] = extent(H.la(i), H.lo(i));
+    H.labelKm(i) = 25 * max(1, diff(H.panelLon{i}) / diff(H.lonLim));
+end
 
 nCol = 4;  nRow = 2 + ceil(max(n - 4, 0) / nCol);
 H.fig = figure('Visible', 'off', 'Position', [50 50 figWidth 430 * nRow * figWidth / 1900], 'Color', 'w');
@@ -54,7 +62,7 @@ for i = 1:n
     gx = geoaxes(H.tl);  gx.Layout.Tile = free(i);
     try, geobasemap(gx, 'grayland'); catch, geobasemap(gx, 'darkwater'); end
     hold(gx, 'on');
-    geolimits(gx, H.latLim, H.lonLim);
+    geolimits(gx, H.panelLat{i}, H.panelLon{i});
     gx.Scalebar.Visible = 'off';
     gx.LatitudeLabel.String = '';  gx.LongitudeLabel.String = '';
     la = H.la{i};  lo = H.lo{i};
@@ -76,6 +84,13 @@ cb = colorbar(H.gx(end));  cb.Label.String = 'rok';
 % převod na pixely pro rozmisťování popisků (až po vykreslení rozvržení)
 drawnow;
 for i = 1:n, H.px{i} = geo_pixel_map(H.gx(i)); end
+end
+
+function [latLim, lonLim] = extent(la, lo)
+LA = vertcat(la{:});  LO = vertcat(lo{:});
+pad = 0.35 + 0.05 * (max(LO) - min(LO));
+latLim = [min(LA) max(LA)] + [-pad pad];
+lonLim = [min(LO) max(LO)] + [-pad pad] * 1.5;
 end
 
 function c = yr2col(H, y)

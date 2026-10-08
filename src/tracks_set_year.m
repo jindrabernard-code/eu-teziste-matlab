@@ -23,7 +23,7 @@ for i = 1:H.n
         title(gx, sprintf('%s  (bez dat)', H.labels{i}), 'FontSize', 10);
         continue
     end
-    year_labels(gx, H.px{i}, la, lo, H.years, ok);
+    year_labels(gx, H.px{i}, la, lo, H.years, ok, H.labelKm(i));
     d = haversine_km(la(ok(1)), lo(ok(1)), la(ok(end)), lo(ok(end)));
     if animated
         set(H.cur(i), 'LatitudeData', la(ok(end)), 'LongitudeData', lo(ok(end)));
@@ -31,11 +31,11 @@ for i = 1:H.n
         if numel(ok) > 1 && H.years(ok(end)) == y
             step = haversine_km(la(ok(end-1)), lo(ok(end-1)), la(ok(end)), lo(ok(end)));
         end
-        title(gx, sprintf('%s  (od %d: %.0f km, za rok: %.0f km)', H.labels{i}, ...
+        title(gx, sprintf('%s%s  (od %d: %.0f km, za rok: %.0f km)', H.labels{i}, own_note(H, i), ...
             H.years(ok(1)), d, step), 'FontSize', 10);
     else
         set(H.cur(i), 'LatitudeData', NaN, 'LongitudeData', NaN);
-        title(gx, sprintf('%s  (%d–%d: %.0f km)', H.labels{i}, H.years(ok(1)), ...
+        title(gx, sprintf('%s%s  (%d–%d: %.0f km)', H.labels{i}, own_note(H, i), H.years(ok(1)), ...
             H.years(ok(end)), d), 'FontSize', 10);
     end
 end
@@ -50,19 +50,31 @@ if animated
 end
 end
 
-function year_labels(gx, px, la, lo, years, ok)
-% první rok, skoky > 25 km a poslední rok; body blíž než 20 km
+function year_labels(gx, px, la, lo, years, ok, thr)
+% první rok, skoky > thr km (25 km při společném výřezu, nejvýš 6 největších)
+% a poslední rok;
+% body blíž než 0.8*thr km
 % k předchozímu popisku se k němu připojí jako rozsah ("2020–25").
 % Umístění řeší place_labels, aby popisky nepřekrývaly trajektorii.
 d = [inf; haversine_km(la(ok(1:end-1)), lo(ok(1:end-1)), la(ok(2:end)), lo(ok(2:end)))];
-lab = unique([ok(1); ok(d > 25); ok(end)]);
+big = ok(d > thr);
+if numel(big) > 6                       % rozkolísaná řada (rozpočet): jen 6 největších skoků
+    [~, ord] = sort(d(d > thr), 'descend');
+    big = sort(big(ord(1:6)));
+end
+lab = unique([ok(1); big; ok(end)]);
 txt = strings(0);  at = [];
 for k = lab'
-    if ~isempty(at) && haversine_km(la(at(end)), lo(at(end)), la(k), lo(k)) < 20
+    if ~isempty(at) && haversine_km(la(at(end)), lo(at(end)), la(k), lo(k)) < 0.8 * thr
         txt(end) = extractBefore(txt(end) + "–", 5) + "–" + mod(years(k), 100);
     else
         txt(end+1) = string(years(k));  at(end+1) = k; %#ok<AGROW>
     end
 end
 place_labels(gx, px, la(at), lo(at), txt, la(ok), lo(ok), 8);
+end
+
+function s = own_note(H, i)
+s = '';
+if H.own(i), s = ' [vlastní výřez]'; end
 end
