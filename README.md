@@ -27,6 +27,7 @@ světle modré, Spojené království (člen do 2020) světlejší a ostatní st
 | `src/composite_weights.m` | skládání metrik: lineárně / geometricky, váhy ručně / entropie / PCA |
 | `src/geometric_median.m` | Weberův bod na kouli (Weiszfeld + Vardi–Zhang) |
 | `src/EuMap.m` | třída pro mapy: projekce, státy EU / UK / ostatní (hranice GISCO), `line`/`scatter`/`text` v lat/lon |
+| `src/load_nuts_geometry.m` | polygony GISCO → těžiště a plocha regionů (`polyshape`) |
 | `src/spherical_centroid.m` | vážené těžiště na kouli (přes 3D vektory) |
 | `src/council_rule.m` | pravidla kvalifikované většiny: Amsterdam (EU-15), Nice, Lisabon |
 | `src/banzhaf_mc.m` | Banzhafův index hlasovací síly (Monte Carlo) |
