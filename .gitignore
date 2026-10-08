@@ -1,0 +1,9 @@
+# stažená data (Eurostat, GISCO) - skripty si je stáhnou samy
+data/raw/
+# mezivýsledek main.m pro kompozit.m a main_nuts.m
+results/*.mat
+# MATLAB
+*.asv
+*.mex*
+slprj/
+.DS_Store
