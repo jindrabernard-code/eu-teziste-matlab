@@ -287,7 +287,9 @@ Pro každou variantu je jedna mapa: vlevo nahoře přehled celé EU (všechny ř
 na neutrálním šedém podkladu (`grayland`). Každý rok je bod obarvený
 podle roku a sousední roky spojuje úsečka, tedy posun během daného roku. Popsané
 jsou první a poslední rok a skoky nad 25 km. Body blíž než 20 km se popíší rozsahem
-(„2020–25“). Všechny panely jedné mapy mají stejný výřez, takže jsou délky posunů
+(„2020–25“). Popisky rozmisťuje `src/place_labels.m`: pro každý zkusí 8 směrů ve třech
+vzdálenostech od bodu (v pixelech panelu přes Web Mercator) a vybere pozici, kde
+neprotíná žádnou úsečku posunu, nezakrývá body ani jiné popisky a nevyčnívá z panelu. Všechny panely jedné mapy mají stejný výřez, takže jsou délky posunů
 srovnatelné.
 
 **Animace** (`animace_posunu.m`) mají stejné rozvržení, jeden snímek na rok 2000–2025:

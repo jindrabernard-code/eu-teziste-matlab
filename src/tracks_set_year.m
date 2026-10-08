@@ -23,7 +23,7 @@ for i = 1:H.n
         title(gx, sprintf('%s  (bez dat)', H.labels{i}), 'FontSize', 10);
         continue
     end
-    year_labels(gx, la, lo, H.years, ok);
+    year_labels(gx, H.px{i}, la, lo, H.years, ok);
     d = haversine_km(la(ok(1)), lo(ok(1)), la(ok(end)), lo(ok(end)));
     if animated
         set(H.cur(i), 'LatitudeData', la(ok(end)), 'LongitudeData', lo(ok(end)));
@@ -50,9 +50,10 @@ if animated
 end
 end
 
-function year_labels(gx, la, lo, years, ok)
+function year_labels(gx, px, la, lo, years, ok)
 % první rok, skoky > 25 km a poslední rok; body blíž než 20 km
-% k předchozímu popisku se k němu připojí jako rozsah ("2020–25")
+% k předchozímu popisku se k němu připojí jako rozsah ("2020–25").
+% Umístění řeší place_labels, aby popisky nepřekrývaly trajektorii.
 d = [inf; haversine_km(la(ok(1:end-1)), lo(ok(1:end-1)), la(ok(2:end)), lo(ok(2:end)))];
 lab = unique([ok(1); ok(d > 25); ok(end)]);
 txt = strings(0);  at = [];
@@ -63,8 +64,5 @@ for k = lab'
         txt(end+1) = string(years(k));  at(end+1) = k; %#ok<AGROW>
     end
 end
-for t = 1:numel(at)
-    text(gx, la(at(t)), lo(at(t)), "  " + txt(t), 'FontSize', 8, 'FontWeight', 'bold', ...
-        'VerticalAlignment', 'bottom', 'Tag', 'yrlabel');
-end
+place_labels(gx, px, la(at), lo(at), txt, la(ok), lo(ok), 8);
 end

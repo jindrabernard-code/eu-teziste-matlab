@@ -73,6 +73,9 @@ for i = 1:n
     H.gx(i) = gx;
 end
 cb = colorbar(H.gx(end));  cb.Label.String = 'rok';
+% převod na pixely pro rozmisťování popisků (až po vykreslení rozvržení)
+drawnow;
+for i = 1:n, H.px{i} = geo_pixel_map(H.gx(i)); end
 end
 
 function c = yr2col(H, y)
