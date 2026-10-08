@@ -3,14 +3,14 @@
 Kam se posouvá „střed“ Evropské unie, když ho vážíme hlasy v Radě, mandáty v EP,
 obyvatelstvem nebo ekonomikou? A jak s ním pohnula rozšíření 2004/2007/2013 a brexit?
 
-Projekt počítá těžiště podle jednotlivých metrik (každý stát jako jeden bod) nad živými
-daty Eurostatu v základním MATLABu.
+Projekt počítá těžiště podle jednotlivých metrik (každý stát jako jeden bod) a jako
+kompozitní index více metrik. Všechno běží v základním MATLABu nad živými daty Eurostatu.
 
 ## Spuštění
 
 ```matlab
 cd eu-teziste-matlab   % kořen repozitáře
-main             % těžiště podle jednotlivých metrik
+run_all          % = main; kompozit
 ```
 
 Při prvním běhu se stáhnou data z Eurostat API do `data/raw/` (obyvatelstvo `demo_pjan`,
@@ -21,7 +21,11 @@ světle modré, Spojené království (člen do 2020) světlejší a ostatní st
 
 | Soubor | Obsah |
 |---|---|
+| `run_all.m` | spustí všechno níže v tomto pořadí |
 | `main.m` | úroveň států: data → váhy → těžiště → souhrn → grafy |
+| `kompozit.m` | kompozitní indexy na úrovni států |
+| `src/composite_weights.m` | skládání metrik: lineárně / geometricky, váhy ručně / entropie / PCA |
+| `src/geometric_median.m` | Weberův bod na kouli (Weiszfeld + Vardi–Zhang) |
 | `src/EuMap.m` | třída pro mapy: projekce, státy EU / UK / ostatní (hranice GISCO), `line`/`scatter`/`text` v lat/lon |
 | `src/spherical_centroid.m` | vážené těžiště na kouli (přes 3D vektory) |
 | `src/council_rule.m` | pravidla kvalifikované většiny: Amsterdam (EU-15), Nice, Lisabon |
@@ -163,3 +167,49 @@ Co je z toho vidět:
 
 ![mapa](results/mapa_teziste.png)
 ![časové řady](results/casove_rady.png)
+
+## Kompozitní index (`kompozit.m`)
+
+Metriky mají různé jednotky (lidé, EUR, hlasy, km²), proto se každá nejdřív převede
+na **podíl státu na EU** v daném roce (součet = 1). Teprve tyto podíly se skládají.
+
+**Dva způsoby složení:**
+
+- **Lineární** w = Σ αₖ·sₖ. Těžiště takového kompozitu je přesně vážený průměr
+  těžišť jednotlivých metrik (ve 3D, před promítnutím na povrch). Je průhledné,
+  ale nepřináší nic, co by nešlo dopočítat z jednotlivých metrik.
+- **Geometrický** w = Π sₖ^αₖ (jako u HDI). Trestá nevyváženost: stát velký
+  populací, ale ekonomicky slabý, dostane méně než průměr svých podílů. Metrika,
+  která je u všech stejná (státy 1:1), se v geometrickém kompozitu vůbec neprojeví.
+
+**Tři způsoby, jak zvolit váhy αₖ:**
+
+- **Ručně (předvolby):** politický (Banzhaf 0,4 + EP 0,3 + státy 0,3), ekonomický
+  (HDP EUR + PPS), vyvážený (⅓ populace, ⅓ politika, ⅓ ekonomika).
+- **Entropické váhy:** metrika rozložená mezi státy nerovnoměrněji nese víc
+  informace. Státy 1:1 tak dostanou 0 a HDP v EUR nejvíc (0,25).
+- **PCA (postup OECD Handbook):** čtverce ladění 1. hlavní komponenty. Vychází
+  skoro rovnoměrně (~0,18), protože metriky spolu silně korelují.
+
+**Jiný způsob, jak spojit více proměnných:** místo těžiště (průměru) se dá hledat
+**geometrický medián**, tedy bod s nejmenším součtem vážených vzdáleností („kam
+dát hlavní město“). Medián nepřitáhne několik vzdálených bodů (Kypr, Finsko).
+Navíc může legitimně padnout přímo na některý stát: vyvážený medián pro rok 2000
+leží přesně v Lucembursku. Ověřil jsem to hrubou sítí i `fminsearch`.
+
+| Varianta | 2000 | 2025 | Posun |
+|---|---|---|---|
+| Politický | 49,38 N 6,08 E | 48,69 N 12,16 E | 449 km |
+| Vyvážený (lineární) | 49,02 N 5,80 E | 48,42 N 10,14 E | 325 km |
+| PCA | 49,13 N 5,87 E | 48,61 N 10,09 E | 314 km |
+| Vyvážený (geometrický) | 48,93 N 5,74 E | 48,43 N 9,86 E | 307 km |
+| Entropie | 49,23 N 5,89 E | 48,70 N 9,72 E | 286 km |
+| Ekonomický | 49,20 N 5,75 E | 48,59 N 8,70 E | 226 km |
+| Medián populace | 49,20 N 5,90 E | 49,29 N 10,02 E | 299 km |
+| Medián vyvážený | 49,78 N 6,10 E | 49,81 N 10,31 E | 302 km |
+
+Medián leží asi o 1° severněji než těžiště, protože ho jih (Itálie, Španělsko,
+Řecko, Kypr) netáhne tolik. Geometrický kompozit je o 0,3° západněji než lineární:
+penalizuje státy s vysokou populací a nízkým HDP, tedy hlavně východ.
+
+![kompozit](results/kompozit_mapa.png)
