@@ -63,7 +63,9 @@ for s = sheetnames(file)'
     rG = find(startsWith(L1, "Gross National Income") | startsWith(L2, "Gross National Income"), 1);
     gni = num(C(rG, cols));
 
-    ok = spend ~= 0 | contrib ~= 0;                     % not a member in that year
+    % only countries that pay a national contribution, i.e. members; candidate
+    % countries have pre-accession spending but must not enter the rescaling
+    ok = contrib ~= 0;
     k = sum(spend(ok)) / sum(contrib(ok));
     obb = spend - contrib * k;
     y = str2double(regexp(s, '\d{4}', 'match', 'once'));
