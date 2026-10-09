@@ -23,21 +23,18 @@ for i = 1:H.n
         title(gx, sprintf('%s  (no data)', H.labels{i}), 'FontSize', 10);
         continue
     end
-    year_labels(gx, H.px{i}, la, lo, H.years, ok, H.labelKm(i));
     d = haversine_km(la(ok(1)), lo(ok(1)), la(ok(end)), lo(ok(end)));
     if animated
         set(H.cur(i), 'LatitudeData', la(ok(end)), 'LongitudeData', lo(ok(end)));
-        step = 0;
-        if numel(ok) > 1 && H.years(ok(end)) == y
-            step = haversine_km(la(ok(end-1)), lo(ok(end-1)), la(ok(end)), lo(ok(end)));
-        end
-        title(gx, sprintf('%s%s  (since %d: %.0f km, this year: %.0f km)', H.labels{i}, own_note(H, i), ...
-            H.years(ok(1)), d, step), 'FontSize', 10);
+        title(gx, [H.labels{i} own_note(H, i)], 'FontSize', 10);
+        ring = [la(ok(end)) lo(ok(end)) 9];          % current-year ring, ~9 px radius
     else
         set(H.cur(i), 'LatitudeData', NaN, 'LongitudeData', NaN);
         title(gx, sprintf('%s%s  (%d–%d: %.0f km)', H.labels{i}, own_note(H, i), H.years(ok(1)), ...
             H.years(ok(end)), d), 'FontSize', 10);
+        ring = [];
     end
+    year_labels(gx, H.px{i}, la, lo, H.years, ok, H.labelKm(i), ring);
 end
 if animated
     mem = H.codes(H.member(yi, :));
@@ -50,11 +47,12 @@ if animated
 end
 end
 
-function year_labels(gx, px, la, lo, years, ok, thr)
-% Label the first year, jumps > thr km (25 km in the shared zoom, at most
-% the 6 largest) and the last year. Points closer than 0.8*thr km to the
-% previous label are merged into it as a range ("2020–25").
-% place_labels positions them so they do not cover the track.
+function year_labels(gx, px, la, lo, years, ok, thr, ring)
+% Candidates: the first year, jumps over thr km (25 km in the shared zoom,
+% at most the 6 largest) and the last year. Candidates closer than 14 px
+% to the previous one are merged into a range ("2020–25"). Labels are then
+% placed by priority: the group with the last (current) year, the first
+% year, then the largest jumps; place_labels drops any that would overlap.
 d = [inf; haversine_km(la(ok(1:end-1)), lo(ok(1:end-1)), la(ok(2:end)), lo(ok(2:end)))];
 big = ok(d > thr);
 if numel(big) > 6                       % noisy series: only the 6 largest jumps
@@ -62,15 +60,21 @@ if numel(big) > 6                       % noisy series: only the 6 largest jumps
     big = sort(big(ord(1:6)));
 end
 lab = unique([ok(1); big; ok(end)]);
-txt = strings(0);  at = [];
-for k = lab'
-    if ~isempty(at) && haversine_km(la(at(end)), lo(at(end)), la(k), lo(k)) < 0.8 * thr
-        txt(end) = extractBefore(txt(end) + "–", 5) + "–" + mod(years(k), 100);
-    else
-        txt(end+1) = string(years(k));  at(end+1) = k; %#ok<AGROW>
-    end
+[x, y] = px.toPx(la(lab), lo(lab));
+grp = cumsum([1; hypot(diff(x), diff(y)) >= 14]);   % chronological groups
+nG = grp(end);
+txt = strings(nG, 1);  at = zeros(nG, 1);  prio = zeros(nG, 1);
+dOk = d;  dOk(1) = 0;
+for g = 1:nG
+    m = lab(grp == g);
+    at(g) = m(1);
+    txt(g) = string(years(m(1)));
+    if numel(m) > 1, txt(g) = txt(g) + "–" + mod(years(m(end)), 100); end
+    jump = max(dOk(ismember(ok, m)));
+    prio(g) = jump + 1e6 * any(m == ok(end)) + 1e5 * any(m == ok(1));
 end
-place_labels(gx, px, la(at), lo(at), txt, la(ok), lo(ok), 8);
+[~, order] = sort(prio, 'descend');
+place_labels(gx, px, la(at(order)), lo(at(order)), txt(order), la(ok), lo(ok), 8, ring);
 end
 
 function s = own_note(H, i)

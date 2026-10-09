@@ -194,10 +194,13 @@ Two quirks of the source workbook are handled: from 2021 the countries' spending
 The maps use their own `EuMap` class on ordinary axes, so no Mapping Toolbox and no
 online map tiles are needed. EU members are light blue, the UK (member until 2020) paler,
 other countries grey. The zoomed panels of the shift maps use MATLAB's `grayland`
-basemap. Year labels are placed by `src/place_labels.m`: for every label it tries 8
-directions at 3 distances from the point (in panel pixels via Web Mercator) and picks the
-position that crosses no track segment, covers no point or other label and stays inside
-the panel.
+basemap. Year labels are placed by `src/place_labels.m`. For every label it tries 16
+directions at 4 distances from the point (in panel pixels via Web Mercator). Hard rules:
+a label never overlaps another label, the current-year ring or the panel edge. If no
+position satisfies them, the label is dropped, so texts can never overlap. Among the
+allowed positions it prefers the one that crosses no track segment and covers no point.
+Labels are placed by priority: the current / last year, the first year, then the largest
+jumps. Years closer than 14 px to each other are merged into a range ("2020–25").
 
 ## Charts
 
@@ -222,9 +225,9 @@ a point coloured by year (colour bar), consecutive years are joined by a segment
 during that year), and the first and last years and jumps over 25 km are labelled. All
 panels share the same zoom, so the lengths of the shifts are comparable.
 **`results/animation_1_metrics.gif`** is the same figure as an animation, one frame per
-year: the tracks grow, the current year is circled, each panel title shows the shift since
-2000 and during that year, and the overview colours the countries that were EU members in
-that year (EU-15 → 25 → 27 → 28 → 27). Each frame lasts 0.7 s, enlargement / Brexit /
+year: the tracks grow, the current year is circled, and the overview colours the countries
+that were EU members in that year (EU-15 → 25 → 27 → 28 → 27). Panel titles show only the
+metric name; the total shift is given in the static map. Each frame lasts 0.7 s, enlargement / Brexit /
 rule-change years (2004, 2007, 2013, 2014, 2020) twice as long, the last frame 4 s.
 
 ### Variant 2: composite indices

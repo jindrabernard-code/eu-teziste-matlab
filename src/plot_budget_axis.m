@@ -24,10 +24,17 @@ mp.line(la1, lo1, '-o', 'Color', red, 'MarkerFaceColor', red, 'MarkerSize', 3, .
     'LineWidth', 1.8, 'DisplayName', 'Net payers centroid');
 mp.line(la2, lo2, '-o', 'Color', green, 'MarkerFaceColor', green, 'MarkerSize', 3, ...
     'LineWidth', 1.8, 'DisplayName', 'Net receivers centroid');
-for y = [2000 2007 2025]               % more labels would overlap in the payers' cluster
+% few labels on a white background: the payers' track is a dense cluster,
+% so it gets only its first and last year
+lbl = {'FontSize', 8, 'FontWeight', 'bold', 'BackgroundColor', 'w', 'Margin', 0.5, ...
+    'HorizontalAlignment', 'left', 'VerticalAlignment', 'bottom'};
+for y = [2000 2025]
     i = find(years == y);
-    mp.text(la1(i), lo1(i), "  " + y, 'FontSize', 8, 'Color', red, 'FontWeight', 'bold');
-    mp.text(la2(i), lo2(i), "  " + y, 'FontSize', 8, 'Color', green, 'FontWeight', 'bold');
+    mp.text(la1(i), lo1(i) + 0.4, string(y), 'Color', red, lbl{:});
+end
+for y = [2000 2007 2025]
+    i = find(years == y);
+    mp.text(la2(i) + 0.2, lo2(i) + 0.4, string(y), 'Color', green, lbl{:});
 end
 legend(mp.Ax, 'Location', 'northwest');
 title(mp.Ax, 'Dotted = payers → receivers connector');
