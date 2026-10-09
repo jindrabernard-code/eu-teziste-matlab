@@ -250,9 +250,12 @@ same shift map / animation as above for the composites and medians.
 
 ![NUTS-3 regions](results/nuts3_map.png)
 
-**`results/nuts3_map.png`**: all NUTS-3 regions in the last year with GDP data. Bubble
-size = population, colour = GDP in PPS per capita (log scale). The population, GDP and
-balanced-composite centroids are marked.
+**`results/nuts3_map.png`**: left, all NUTS-3 regions in the last year with GDP data
+(bubble size = population, colour = GDP in PPS per capita, log scale) with the zoom area
+marked. Right, the zoom with the population (red), GDP (black) and balanced-composite
+(magenta) centroids as crosses with a white halo. On a map of Europe the three centres are
+only a few pixels apart, so they are shown in the zoom; the cross size is computed from
+their pixel distance so that they never overlap.
 
 ![Resolution comparison](results/nuts_resolution.png)
 
