@@ -6,7 +6,7 @@ labels = metric_labels();
 
 % 1) map
 f = figure('Visible', 'off', 'Position', [100 100 1100 800]);
-mp = EuMap(f, [34 71], [-11 35], true);
+mp = EuMap(f, [34 71], [-11 35], false, 'plain');   % grey countries, no EU highlight
 for i = 1:numel(names)
     la = R.(names(i) + "_lat");  lo = R.(names(i) + "_lon");
     mp.line(la, lo, '-', 'Color', cols(i, :), 'LineWidth', 1.8, ...

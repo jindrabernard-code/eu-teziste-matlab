@@ -8,6 +8,7 @@ classdef EuMap < handle
 %       m.scatter(lat, lon, sz, c, 'filled')    ~ geoscatter
 %       m.text(lat, lon, 'label')
 %   m.showMembers(members, former) recolours countries by membership (animation).
+%   EuMap(..., withLegend, 'plain') draws every country in grey (no EU highlight).
 %   m.Ax are the underlying axes (title, legend, colormap, colorbar, Layout).
 %
 %   Projection: equirectangular with standard parallel 50° N
@@ -33,8 +34,11 @@ classdef EuMap < handle
     end
 
     methods
-        function m = EuMap(parent, latLim, lonLim, withLegend)
+        function m = EuMap(parent, latLim, lonLim, withLegend, style)
             if nargin < 4, withLegend = false; end
+            if nargin < 5, style = 'members'; end
+            plain = strcmp(style, 'plain');
+            if plain, withLegend = false; end      % no EU / UK legend entries
             m.Ax = axes(parent);
             ax = m.Ax;
             hold(ax, 'on');  box(ax, 'on');
@@ -49,7 +53,11 @@ classdef EuMap < handle
             m.LegFormer = fill(ax, NaN, NaN, EuMap.UK_COLOR, 'EdgeColor', EuMap.EU_EDGE, ...
                 'LineStyle', ':', 'DisplayName', 'United Kingdom (member until 2020)', 'HandleVisibility', hv);
             C = readtable(fullfile(EuMap.root(), 'data', 'countries.csv'), 'TextType', 'string');
-            m.showMembers(C.code(ismissing(C.leave_date) | C.leave_date == ""), "UK");
+            if plain
+                m.showMembers(strings(0));
+            else
+                m.showMembers(C.code(ismissing(C.leave_date) | C.leave_date == ""), "UK");
+            end
             m.limits(latLim, lonLim);
         end
 
