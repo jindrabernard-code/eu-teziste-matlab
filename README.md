@@ -10,6 +10,9 @@ tracks how the centroid moved through the 2004/2007/2013 enlargements and Brexit
 Everything runs in base MATLAB (no toolboxes required) on live data from Eurostat, the
 European Commission, the World Bank (SIPRI) and the IMF.
 
+**Economic interpretation:** [docs/economic_interpretation.md](docs/economic_interpretation.md)
+explains why the centroids moved, what changed underneath and what it means.
+
 ![Animated centroid shifts, variant 1](results/animation_1_metrics.gif)
 
 ## Quick start
@@ -52,6 +55,7 @@ MATLAB R2023b. A full run takes about 10 minutes, most of it rendering the anima
 | `data/council_votes.csv` | weighted Council votes: EU-15 (87) and Nice (up to 352) |
 | `data/ep_seats.csv` | EP seat allocation per term, 1999–2024 |
 | `results/` | CSV results, PNG charts and GIF animations (described below) |
+| `docs/economic_interpretation.md` | economic reading of the two main animations |
 
 ## Methodology
 
@@ -326,8 +330,8 @@ labelled.
    (2022→2024, 108 km, to 49.20 N 9.93 E) with the rearmament of Poland and the Baltics.
 8. **Government debt barely moved east (129 km in total)**, the least of all metrics.
    The 2004 enlargement shifted it only 26 km, because the new members had little debt.
-   Between 2008 and 2019 it drifted west (7.42° → 6.17° E) as debt grew in Spain, France
-   and Italy while Germany consolidated. Brexit then moved it 164 km south. Today the
+   Between 2008 and 2019 it drifted west (7.42° → 6.17° E) as the shares of Spain, the UK
+   and France grew while Germany's fell from 20.5 % to 15.6 %. Brexit then moved it 164 km south. Today the
    centroid of EU public debt lies in Switzerland, which is not an EU member.
 
 ### Composite indices
@@ -369,13 +373,14 @@ one: it penalises countries with a large population and low GDP, i.e. mostly the
 
 ### EU budget
 
-- **The net-receiver centroid moved 1,254 km**, more than any other measure: from the Gulf
-  of Lion (2000: Spain, Greece, Portugal, Ireland) through northern Italy (2006–2008) and
-  Austria (2009–2013) to **Hungary** (from 2014: Poland, Hungary, Romania, Czechia).
+- **The net-receiver centroid moved 1,249 km**, more than any other measure: from the Gulf
+  of Lion (2000: Spain, Greece, Portugal, Ireland) through northern Italy (2006–2007) and
+  the northern Adriatic / Austria (2008–2013) to **Hungary** (from 2014: Poland, Hungary,
+  Romania, Czechia).
 - **Net payers stay in western Germany** (Germany, France, the Netherlands, formerly the
-  UK). They fluctuate, but in total moved only 273 km south, to Mainz: the UK left and
+  UK). They fluctuate, but in total moved only 277 km south, to Mainz: the UK left and
   Italy became a net payer.
-- **The redistribution axis** was 1,000–1,200 km long in 2000–2003, shrank to ~570 km
+- **The redistribution axis** was 1,015–1,215 km long in 2000–2003, shrank to ~570 km
   after the enlargements (2010) as the receivers moved closer to the centre, and has since
   grown again to 700–850 km as the receivers moved further east.
 - **The volume of redistribution** grew from EUR 15 bn (2000) to EUR 48 bn (2020). In 2024
